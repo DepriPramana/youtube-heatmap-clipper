@@ -12,7 +12,7 @@ warnings.filterwarnings("ignore")
 
 OUTPUT_DIR = "clips"      # Directory where generated clips will be saved
 MAX_DURATION = 60         # Maximum duration (in seconds) for each clip
-MIN_SCORE = 0.40          # Minimum heatmap intensity score to be considered viral
+MIN_SCORE = 0.25          # Minimum heatmap intensity score (lowered for more results)
 MAX_CLIPS = 10            # Maximum number of clips to generate per video
 MAX_WORKERS = 1           # Number of parallel workers (reserved for future concurrency)
 PADDING = 10              # Extra seconds added before and after each detected segment
@@ -249,7 +249,8 @@ def ambil_most_replayed(video_id):
 
     try:
         html = requests.get(url, headers=headers, timeout=20).text
-    except Exception:
+    except Exception as e:
+        print(f"  [ERROR] Failed to fetch video page: {e}")
         return []
 
     match = re.search(
@@ -259,14 +260,20 @@ def ambil_most_replayed(video_id):
     )
 
     if not match:
+        print("  [INFO] No heatmap markers found in video HTML.")
+        print("  [INFO] This video may not have 'Most Replayed' data yet.")
+        print("  [TIP] Try a more popular video or wait for more views.")
         return []
 
     try:
         markers = json.loads(match.group(1).replace('\\"', '"'))
-    except Exception:
+        print(f"  [OK] Found {len(markers)} raw markers")
+    except Exception as e:
+        print(f"  [ERROR] Failed to parse markers JSON: {e}")
         return []
 
     results = []
+    all_markers = []  # Track all markers for debugging
 
     for marker in markers:
         if "heatMarkerRenderer" in marker:
@@ -274,17 +281,35 @@ def ambil_most_replayed(video_id):
 
         try:
             score = float(marker.get("intensityScoreNormalized", 0))
+            start = float(marker["startMillis"]) / 1000
+            duration = min(
+                float(marker["durationMillis"]) / 1000,
+                MAX_DURATION
+            )
+            
+            # Store all markers for debugging
+            all_markers.append({"start": start, "duration": duration, "score": score})
+            
             if score >= MIN_SCORE:
                 results.append({
-                    "start": float(marker["startMillis"]) / 1000,
-                    "duration": min(
-                        float(marker["durationMillis"]) / 1000,
-                        MAX_DURATION
-                    ),
+                    "start": start,
+                    "duration": duration,
                     "score": score
                 })
-        except Exception:
+        except Exception as e:
             continue
+
+    # Debug output
+    if all_markers:
+        max_score = max(m["score"] for m in all_markers)
+        min_score = min(m["score"] for m in all_markers)
+        print(f"  [DEBUG] Score range: {min_score:.3f} to {max_score:.3f}")
+        print(f"  [DEBUG] Current threshold: {MIN_SCORE}")
+        print(f"  [DEBUG] Markers above threshold: {len(results)}/{len(all_markers)}")
+        
+        if len(results) == 0 and len(all_markers) > 0:
+            print(f"  [TIP] All scores below MIN_SCORE ({MIN_SCORE}).")
+            print(f"  [TIP] Try lowering MIN_SCORE to {max_score:.2f} or less in run.py")
 
     results.sort(key=lambda x: x["score"], reverse=True)
     return results
