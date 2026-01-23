@@ -1,3 +1,13 @@
+# Core dependencies
 requests>=2.31.0
 yt-dlp>=2024.01.01
 Flask>=3.0.0
+
+# Ngrok for public URL (required for Colab)
+pyngrok>=7.0.0
+
+# AI Subtitle (optional but recommended)
+faster-whisper>=1.0.0
+
+# Additional dependencies for stability
+Werkzeug>=3.0.0

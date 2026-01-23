@@ -11,6 +11,9 @@ from flask import Flask, jsonify, render_template, request, send_from_directory
 
 import run as core
 
+# --- Add this import ---
+from pyngrok import ngrok
+
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 
@@ -304,5 +307,43 @@ def serve_clip(job_id, filename):
     return send_from_directory(job_dir, filename, as_attachment=True)
 
 
+# --- Execution block ---
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    import os
+    
+    # Get ngrok token from environment variable or use default
+    ngrok_token = os.getenv("NGROK_AUTH_TOKEN", "38doKfu9q7H8l6p1vlZelDtrYaG_6Wq7JxQNzd3JF1tZ64gFX")
+    
+    # Check if running in Colab
+    try:
+        import google.colab
+        IN_COLAB = True
+        print("🔍 Detected Google Colab environment")
+    except ImportError:
+        IN_COLAB = False
+        print("🖥️  Running in local environment")
+    
+    port = 5000
+    
+    # Setup ngrok for public URL (useful for Colab)
+    if ngrok_token:
+        try:
+            ngrok.set_auth_token(ngrok_token)
+            public_url = ngrok.connect(port)
+            print(f"\n{'='*60}")
+            print(f"🌐 Public URL: {public_url}")
+            print(f"{'='*60}\n")
+            
+            if IN_COLAB:
+                # In Colab, display clickable link
+                from IPython.display import display, HTML
+                display(HTML(f'<h3><a href="{public_url}" target="_blank">🚀 Click here to open the app</a></h3>'))
+        except Exception as e:
+            print(f"⚠️  Ngrok setup failed: {e}")
+            print(f"📍 App will be available at: http://127.0.0.1:{port}")
+    else:
+        print(f"📍 App running at: http://127.0.0.1:{port}")
+    
+    # Start the Flask app
+    print(f"\n🎬 YouTube Heatmap Clipper is starting...")
+    app.run(host='0.0.0.0', port=port, use_reloader=False)
