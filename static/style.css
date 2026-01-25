@@ -107,11 +107,58 @@ body {
   width: 100%;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1400px) {
   .layout-grid {
-    grid-template-columns: 340px 1fr;
+    grid-template-columns: 320px 1fr 380px;
+    /* 3 Columns on large screens */
     align-items: start;
-    padding: 40px;
+    padding: 32px;
+    gap: 32px;
+    max-width: 1800px;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .layout-grid {
+    grid-template-columns: 300px 1fr;
+    /* 2 Columns on smaller desktops */
+    gap: 24px;
+  }
+
+  .col-results {
+    grid-column: 2;
+    /* Stack results below workspace */
+  }
+}
+
+/* Column Styles */
+.col-config {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.col-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.col-results {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+/* Config Card sticky only on large screens */
+@media (min-width: 1024px) {
+  .config-card {
+    position: sticky;
+    top: 100px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
   }
 }
 

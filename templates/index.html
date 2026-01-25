@@ -52,8 +52,8 @@
     </header>
 
     <main class="layout-grid">
-      <!-- LEFT COLUMN: CONFIGURATION -->
-      <aside class="layout-sidebar">
+      <!-- COLUMN 1: CONFIGURATION -->
+      <aside class="col-config">
         <section class="card config-card">
           <h2 class="section-title">Configuration</h2>
 
@@ -202,8 +202,8 @@
         </section>
       </aside>
 
-      <!-- RIGHT COLUMN: RESULTS -->
-      <div class="layout-main">
+      <!-- COLUMN 2: WORKSPACE (Preview + Segments) -->
+      <section class="col-workspace">
 
         <div id="preview" class="preview-card hide">
           <div class="preview-thumb">
@@ -234,7 +234,10 @@
           </div>
           <div id="segments" class="segments-list"></div>
         </section>
+      </section>
 
+      <!-- COLUMN 3: RESULTS (Progress + Outputs) -->
+      <aside class="col-results">
         <section class="panel">
           <div class="panelHead">
             <div class="panelTitle" data-i18n="panel.progress">Task Progress</div>
@@ -243,7 +246,7 @@
           <div id="progress" class="progress-container"></div>
           <div id="outputs" class="outputs-list"></div>
         </section>
-      </div>
+      </aside>
     </main>
   </div>
 
