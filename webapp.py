@@ -165,6 +165,9 @@ def run_job(job_id, payload):
                 raise RuntimeError("Tidak ada heatmap/Most Replayed data")
             targets = segments[: max(1, max_clips or 10)]
 
+        watermark_text = payload.get("watermark_text")
+        watermark_pos = payload.get("watermark_pos")
+
         set_job(job_id, total=len(targets), done=0, status_text="processing")
 
         def event_hook(kind, data):
@@ -177,7 +180,11 @@ def run_job(job_id, payload):
         success = 0
         for idx, item in enumerate(targets, start=1):
             set_job(job_id, current=idx, status_text=f"clip {idx}/{len(targets)}")
-            ok = core.proses_satu_clip(video_id, item, idx, total_duration, crop, subtitle, event_hook=event_hook)
+            ok = core.proses_satu_clip(
+                video_id, item, idx, total_duration, crop, subtitle, 
+                watermark_text=watermark_text, watermark_pos=watermark_pos, 
+                event_hook=event_hook
+            )
             if ok:
                 success += 1
             set_job(job_id, done=idx, success=success, outputs=list_outputs(job_dir))

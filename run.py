@@ -417,14 +417,10 @@ def format_timestamp(seconds):
     return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
 
 
-def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default", use_subtitle=False, event_hook=None):
+def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default", use_subtitle=False, watermark_text=None, watermark_pos="bottom_right", event_hook=None):
     """
     Download, crop, and export a single vertical clip
     based on a heatmap segment.
-    
-    Args:
-        crop_mode: "default", "split_left", or "split_right"
-        use_subtitle: whether to generate and burn subtitle
     """
     start_original = item["start"]
     end_original = item["start"] + item["duration"]
@@ -439,6 +435,40 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
     cropped_file = f"temp_cropped_{index}.mp4"
     subtitle_file = f"temp_{index}.srt"
     output_file = os.path.join(OUTPUT_DIR, f"clip_{index}.mp4")
+
+    # ... (download logic omitted for brevity, assuming it remains same) ...
+    
+    # WATERMARK FILTER BUILDER
+    def get_watermark_filter(w_text, w_pos):
+        if not w_text: return None
+        # Escape text for FFmpeg
+        text = w_text.replace(":", "\\:").replace("'", "").strip()
+        
+        # Positions (10px padding)
+        x, y = "10", "10"
+        if w_pos == "top_right":
+             x, y = "w-tw-10", "10"
+        elif w_pos == "bottom_left":
+             x, y = "10", "h-th-10"
+        elif w_pos == "bottom_right":
+             x, y = "w-tw-10", "h-th-10"
+        
+        return f"drawtext=text='{text}':x={x}:y={y}:fontsize=24:fontcolor=white@0.8:shadowcolor=black@0.5:shadowx=1:shadowy=1"
+
+    # ... (skipping download part to focus on crop/filter) ...
+    
+    # I need to target the crop_mode blocks and inject the filter.
+    # Since replace_file_content works on contiguous blocks, I have to be careful.
+    # Actually, simpler strategy:
+    # I'll update the 'cmd_crop' construction to Append the watermark filter if it exists.
+    # But cmd_crop uses -vf or -filter_complex.
+    # If -filter_complex is used (split modes), I need to append to the end chain.
+    # If -vf is used (default), I just append to it.
+    
+    # Wait, the tool requires me to replace EXisting content. 
+    # I will replace the function definition first.
+    pass 
+
 
     print(
         f"[Clip {index}] Processing segment "
@@ -503,17 +533,29 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
             return False
 
         out_w, out_h = OUT_WIDTH, OUT_HEIGHT
+        
+        # Helper to attach watermark to a simple VF string
+        def apply_wm_simple(vf_chain):
+            wm = get_watermark_filter(watermark_text, watermark_pos)
+            if not wm: return vf_chain
+            if not vf_chain: return wm
+            return f"{vf_chain},{wm}"
+
         if crop_mode == "default":
             if OUTPUT_RATIO == "original":
+                # For original, we might not have a VF yet, but we can add one for watermark
+                vf = apply_wm_simple(None)
                 cmd_crop = [
                     "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                     "-i", temp_file,
+                    *([] if not vf else ["-vf", vf]),
                     "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
                     "-c:a", "aac", "-b:a", "128k",
                     cropped_file
                 ]
             else:
                 vf = build_cover_scale_crop_vf(out_w, out_h)
+                vf = apply_wm_simple(vf)
                 cmd_crop = [
                     "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                     "-i", temp_file,
@@ -525,6 +567,7 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
         elif crop_mode == "split_left":
             if OUTPUT_RATIO == "original" or not out_w or not out_h or out_h < out_w:
                 vf = build_cover_scale_crop_vf(out_w or 720, out_h or 1280) if OUTPUT_RATIO != "original" else None
+                vf = apply_wm_simple(vf)
                 cmd_crop = [
                     "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                     "-i", temp_file,
@@ -536,13 +579,24 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
             else:
                 top_h, bottom_h = get_split_heights(out_h)
                 scaled = build_cover_scale_vf(out_w, out_h)
+                
+                # Check if watermark exists
+                wm = get_watermark_filter(watermark_text, watermark_pos)
+                final_map = "[out]"
+                
                 vf = (
                     f"{scaled}[scaled];"
                     f"[scaled]split=2[s1][s2];"
                     f"[s1]crop={out_w}:{top_h}:(iw-{out_w})/2:(ih-{out_h})/2[top];"
                     f"[s2]crop={out_w}:{bottom_h}:0:ih-{bottom_h}[bottom];"
-                    f"[top][bottom]vstack[out]"
+                    f"[top][bottom]vstack[pre_out]"
                 )
+                
+                if wm:
+                    vf += f";[pre_out]{wm}[out]"
+                else:
+                    vf = vf.replace("[pre_out]", "[out]")
+
                 cmd_crop = [
                     "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                     "-i", temp_file,
@@ -555,6 +609,7 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
         elif crop_mode == "split_right":
             if OUTPUT_RATIO == "original" or not out_w or not out_h or out_h < out_w:
                 vf = build_cover_scale_crop_vf(out_w or 720, out_h or 1280) if OUTPUT_RATIO != "original" else None
+                vf = apply_wm_simple(vf)
                 cmd_crop = [
                     "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                     "-i", temp_file,
@@ -566,13 +621,22 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
             else:
                 top_h, bottom_h = get_split_heights(out_h)
                 scaled = build_cover_scale_vf(out_w, out_h)
+                
+                wm = get_watermark_filter(watermark_text, watermark_pos)
+                
                 vf = (
                     f"{scaled}[scaled];"
                     f"[scaled]split=2[s1][s2];"
                     f"[s1]crop={out_w}:{top_h}:(iw-{out_w})/2:(ih-{out_h})/2[top];"
                     f"[s2]crop={out_w}:{bottom_h}:iw-{out_w}:ih-{bottom_h}[bottom];"
-                    f"[top][bottom]vstack[out]"
+                    f"[top][bottom]vstack[pre_out]"
                 )
+                
+                if wm:
+                    vf += f";[pre_out]{wm}[out]"
+                else:
+                    vf = vf.replace("[pre_out]", "[out]")
+
                 cmd_crop = [
                     "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                     "-i", temp_file,

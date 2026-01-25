@@ -354,6 +354,8 @@ function readPayload() {
     subtitle_font: subtitleFont,
     subtitle_location: $("subtitle_location").value,
     subtitle_fontsdir: $("subtitle_fontsdir").value || "",
+    watermark_text: $("watermark_text").value || "",
+    watermark_pos: $("watermark_pos").value,
     start: $("start").value || "",
     end: $("end").value || "",
   };
