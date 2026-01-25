@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>YouTube Heatmap Clipper</title>
     <link rel="stylesheet" href="/static/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="topProgressWrap" class="topProgressWrap hide" aria-hidden="true">
@@ -13,199 +16,199 @@
       </div>
       <div id="topProgressText" class="topProgressText"></div>
     </div>
-    <div class="bg"></div>
-    <main class="wrap">
-      <header class="top">
-        <div class="topLeft">
-          <div class="title">YouTube Heatmap Clipper</div>
-          <div class="sub" data-i18n="top.tagline">Scan Most Replayed, potong otomatis, subtitle rapi.</div>
+    
+    <div class="app-container">
+      <header class="navbar">
+        <div class="navbar-brand">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" class="brand-svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" fill="currentColor"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="title">Heatmap Clipper</h1>
+            <div class="sub" data-i18n="top.tagline">Professional Clipper Tool</div>
+          </div>
         </div>
-        <div class="topRight">
-          <div class="langSwitch" role="group" aria-label="Language">
-            <button id="langId" class="langBtn isActive" type="button" aria-label="Bahasa Indonesia" title="Bahasa Indonesia">
-              <svg class="flag" viewBox="0 0 36 24" aria-hidden="true">
-                <path d="M0 0h36v12H0z" fill="#CE1126"></path>
-                <path d="M0 12h36v12H0z" fill="#FFFFFF"></path>
-              </svg>
-              <span>ID</span>
-            </button>
-            <button id="langEn" class="langBtn" type="button" aria-label="English" title="English">
-              <svg class="flag" viewBox="0 0 36 24" aria-hidden="true">
-                <path d="M0 0h36v24H0z" fill="#012169"></path>
-                <path d="M0 0l36 24M36 0L0 24" stroke="#FFF" stroke-width="6"></path>
-                <path d="M0 0l36 24M36 0L0 24" stroke="#C8102E" stroke-width="3"></path>
-                <path d="M18 0v24M0 12h36" stroke="#FFF" stroke-width="10"></path>
-                <path d="M18 0v24M0 12h36" stroke="#C8102E" stroke-width="6"></path>
-              </svg>
-              <span>EN</span>
-            </button>
+        
+        <div class="navbar-actions">
+           <div class="langSwitch" role="group" aria-label="Language">
+            <button id="langId" class="langBtn isActive" type="button" aria-label="Bahasa Indonesia" title="Bahasa Indonesia">ID</button>
+            <button id="langEn" class="langBtn" type="button" aria-label="English" title="English">EN</button>
           </div>
           <a class="ghLink" href="https://github.com/naufaljct48" target="_blank" rel="noreferrer">
-            <svg class="ghIcon" viewBox="0 0 16 16" aria-hidden="true">
+            <svg class="ghIcon" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"></path>
             </svg>
-            <span>NaufalJCT48</span>
           </a>
         </div>
       </header>
 
-      <section class="card">
-        <div id="preview" class="preview hide">
-          <div class="thumb">
-            <img id="thumbImg" alt="" />
-          </div>
-          <div class="pvMeta">
-            <div id="pvTitle" class="pvTitle"></div>
-            <div id="pvSub" class="pvSub"></div>
-          </div>
-        </div>
-
-        <div class="row">
-          <label class="label" data-i18n="label.url">YouTube URL</label>
-          <input id="url" class="input" placeholder="https://www.youtube.com/watch?v=..." data-i18n-placeholder="ph.url" />
-          <div class="help" data-i18n="help.url">Tempel link video/shorts. Nanti keluar preview.</div>
-        </div>
-
-        <div class="grid2">
-          <div class="row">
-            <label class="label" data-i18n="label.mode">Mode</label>
-            <select id="mode" class="input">
-              <option value="heatmap" data-i18n="opt.mode.heatmap">Scan heatmap (Most Replayed)</option>
-              <option value="custom" data-i18n="opt.mode.custom">Custom start/end (manual)</option>
-            </select>
-            <div class="help" data-i18n="help.mode">Scan = cari momen paling rame. Custom = potong dari waktu yang kamu tentuin.</div>
-          </div>
-          <div class="row">
-            <label class="label" data-i18n="label.ratio">Ratio</label>
-            <select id="ratio" class="input">
-              <option value="9:16" selected data-i18n="opt.ratio.9_16">9:16 (Shorts)</option>
-              <option value="1:1">1:1</option>
-              <option value="16:9">16:9</option>
-              <option value="original" data-i18n="opt.ratio.original">Original</option>
-            </select>
-            <div class="help" data-i18n="help.ratio">Pilih bentuk output video. 9:16 buat Shorts/Reels/TikTok.</div>
-          </div>
-        </div>
-
-        <div class="grid3">
-          <div class="row">
-            <label class="label" data-i18n="label.crop">Crop</label>
-            <select id="crop" class="input">
-              <option value="default" selected data-i18n="opt.crop.default">Default</option>
-              <option value="split_left" data-i18n="opt.crop.split_left">Split Left</option>
-              <option value="split_right" data-i18n="opt.crop.split_right">Split Right</option>
-            </select>
-            <div class="help" data-i18n="help.crop">Split itu buat gaming: atas gameplay, bawah facecam.</div>
-          </div>
-          <div class="row">
-            <label class="label" data-i18n="label.padding">Padding (detik)</label>
-            <input id="padding" class="input" type="number" min="0" value="10" />
-            <div class="help" data-i18n="help.padding">Nambah detik sebelum & sesudah momen biar nggak “kepotong nanggung”.</div>
-          </div>
-          <div class="row">
-            <label class="label" data-i18n="label.max_clips">Max clips</label>
-            <input id="max_clips" class="input" type="number" min="1" value="6" />
-            <div class="help" data-i18n="help.max_clips">Berapa potongan yang mau dihasilkan dari heatmap.</div>
-          </div>
-        </div>
-
-        <div class="grid3">
-          <div class="row">
-            <label class="label" data-i18n="label.subtitle">Subtitle</label>
-            <select id="subtitle" class="input">
-              <option value="n" selected data-i18n="opt.no">No</option>
-              <option value="y" data-i18n="opt.yes">Yes</option>
-            </select>
-            <div class="help" data-i18n="help.subtitle">Kalau Yes, audio ditranskrip jadi teks lalu dibakar ke video.</div>
-          </div>
-          <div class="row">
-            <label class="label" data-i18n="label.whisper_model">Model (Whisper)</label>
-            <select id="whisper_model" class="input">
-              <option value="tiny">tiny</option>
-              <option value="base">base</option>
-              <option value="small" selected>small</option>
-              <option value="medium">medium</option>
-              <option value="large-v3">large-v3</option>
-            </select>
-            <div class="help" data-i18n="help.whisper_model">Ini model AI buat transkripsi suara ke teks. Makin besar makin akurat, makin berat.</div>
-          </div>
-          <div class="row">
-            <label class="label" data-i18n="label.subtitle_font">Font Subtitle</label>
-            <select id="subtitle_font_select" class="input">
-              <option value="Plus Jakarta Sans" selected>Plus Jakarta Sans</option>
-              <option value="Montserrat">Montserrat</option>
-              <option value="Roboto">Roboto</option>
-              <option value="Arial">Arial</option>
-              <option value="custom" data-i18n="opt.custom">Custom…</option>
-            </select>
-            <input id="subtitle_font_custom" class="input hide" placeholder="Nama font custom (mis. Poppins)" data-i18n-placeholder="ph.subtitle_font_custom" />
-            <div class="help" data-i18n="help.subtitle_font">Kalau font-nya ada di folder fonts, isi Fonts dir = fonts.</div>
-          </div>
-        </div>
-
-        <div class="row">
-          <label class="label" data-i18n="label.subtitle_location">Subtitle Location</label>
-          <select id="subtitle_location" class="input">
-            <option value="bottom" selected data-i18n="opt.subtitle_location.bottom">Bottom</option>
-            <option value="center" data-i18n="opt.subtitle_location.center">Centered</option>
-          </select>
-          <div class="help" data-i18n="help.subtitle_location">Bottom = lebih natural buat Shorts. Centered = lebih “in your face”.</div>
-        </div>
-
-        <div class="row">
-          <label class="label" data-i18n="label.subtitle_fontsdir">Fonts dir (opsional)</label>
-          <input id="subtitle_fontsdir" class="input" value="fonts" placeholder="fonts atau C:\fonts (isi .ttf/.otf)" />
-          <div class="help" data-i18n="help.subtitle_fontsdir">Folder berisi file .ttf/.otf buat subtitle. Default: folder project <b>fonts</b>.</div>
-        </div>
-
-        <div id="customBox" class="grid2 hide">
-          <div class="row">
-            <label class="label" data-i18n="label.start">Start (detik atau mm:ss)</label>
-            <input id="start" class="input" placeholder="689 atau 11:29" data-i18n-placeholder="ph.start" />
-          </div>
-          <div class="row">
-            <label class="label" data-i18n="label.end">End (detik atau mm:ss)</label>
-            <input id="end" class="input" placeholder="742 atau 12:22" data-i18n-placeholder="ph.end" />
-          </div>
-        </div>
-
-        <div class="actions">
-          <button id="scanBtn" class="btn ghost" data-i18n="btn.scan">Scan Heatmap</button>
-          <button id="clipBtn" class="btn" data-i18n="btn.clip">Buat Clip</button>
-        </div>
-        <div class="help actionsHelp" data-i18n="help.actions">
-          Scan Heatmap = ambil daftar momen “Most Replayed”. Buat Clip = download + crop + (opsional) subtitle.
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panelHead">
-          <div class="panelTitle" data-i18n="panel.segments">Segments</div>
-          <div class="panelRight">
-            <div class="segMetaLine">
-              <div id="segSelectedMeta" class="panelMeta"></div>
-              <div id="segMeta" class="panelMeta"></div>
+      <main class="layout-grid">
+        <!-- LEFT COLUMN: CONFIGURATION -->
+        <aside class="layout-sidebar">
+          <section class="card config-card">
+            <h2 class="section-title">Configuration</h2>
+            
+            <div class="form-group">
+              <label class="label" data-i18n="label.url">YouTube URL</label>
+              <div class="input-wrapper">
+                <input id="url" class="input" placeholder="https://www.youtube.com/watch?v=..." data-i18n-placeholder="ph.url" />
+              </div>
+              <div class="help" data-i18n="help.url">Paste video link here.</div>
             </div>
-            <div id="segControls" class="segControls hide">
-              <button id="segSelectAllBtn" class="btn ghost smallBtn" type="button" data-i18n="btn.select_all">Select All</button>
-              <button id="segClearBtn" class="btn ghost smallBtn" type="button" data-i18n="btn.clear">Clear</button>
-              <button id="segCreateBtn" class="btn smallBtn" type="button" data-i18n="btn.create_selected">Create Selected Clip</button>
+
+            <div class="grid2">
+              <div class="form-group">
+                <label class="label" data-i18n="label.mode">Mode</label>
+                <select id="mode" class="input select">
+                  <option value="heatmap" data-i18n="opt.mode.heatmap">Scan Heatmap</option>
+                  <option value="custom" data-i18n="opt.mode.custom">Custom Range</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="label" data-i18n="label.ratio">Ratio</label>
+                <select id="ratio" class="input select">
+                  <option value="9:16" selected data-i18n="opt.ratio.9_16">9:16 (Vertical)</option>
+                  <option value="1:1">1:1 (Square)</option>
+                  <option value="16:9">16:9 (Landscape)</option>
+                  <option value="original" data-i18n="opt.ratio.original">Original</option>
+                </select>
+              </div>
+            </div>
+            
+            <div id="customBox" class="grid2 hide">
+              <div class="form-group">
+                <label class="label" data-i18n="label.start">Start</label>
+                <input id="start" class="input" placeholder="00:00" data-i18n-placeholder="ph.start" />
+              </div>
+              <div class="form-group">
+                <label class="label" data-i18n="label.end">End</label>
+                <input id="end" class="input" placeholder="00:00" data-i18n-placeholder="ph.end" />
+              </div>
+            </div>
+
+            <div class="grid2">
+              <div class="form-group">
+                <label class="label" data-i18n="label.crop">Crop Style</label>
+                <select id="crop" class="input select">
+                  <option value="default" selected data-i18n="opt.crop.default">Center Crop</option>
+                  <option value="split_left" data-i18n="opt.crop.split_left">Split Left</option>
+                  <option value="split_right" data-i18n="opt.crop.split_right">Split Right</option>
+                </select>
+              </div>
+              <div class="form-group">
+                 <label class="label" data-i18n="label.padding">Padding (s)</label>
+                 <input id="padding" class="input" type="number" min="0" value="10" />
+              </div>
+            </div>
+             <div class="form-group">
+                 <label class="label" data-i18n="label.max_clips">Max Clips</label>
+                 <input id="max_clips" class="input" type="number" min="1" value="6" />
+            </div>
+
+            <hr class="divider"/>
+            
+            <h3 class="subsection-title" data-i18n="label.subtitle">Subtitles</h3>
+            <div class="form-group">
+               <div class="toggle-wrapper">
+                 <label class="label" data-i18n="label.subtitle">Enable Subtitles</label>
+                 <select id="subtitle" class="input select">
+                    <option value="n" selected data-i18n="opt.no">No</option>
+                    <option value="y" data-i18n="opt.yes">Yes</option>
+                  </select>
+               </div>
+            </div>
+
+            <div class="grid2">
+               <div class="form-group">
+                <label class="label" data-i18n="label.whisper_model">Model</label>
+                <select id="whisper_model" class="input select">
+                  <option value="tiny">tiny</option>
+                  <option value="base">base</option>
+                  <option value="small" selected>small</option>
+                  <option value="medium">medium</option>
+                  <option value="large-v3">large-v3</option>
+                </select>
+              </div>
+               <div class="form-group">
+                <label class="label" data-i18n="label.subtitle_location">Position</label>
+                <select id="subtitle_location" class="input select">
+                  <option value="bottom" selected data-i18n="opt.subtitle_location.bottom">Bottom</option>
+                  <option value="center" data-i18n="opt.subtitle_location.center">Center</option>
+                </select>
+              </div>
+            </div>
+            
+             <div class="form-group">
+                <label class="label" data-i18n="label.subtitle_font">Font</label>
+                <select id="subtitle_font_select" class="input select">
+                  <option value="Plus Jakarta Sans" selected>Plus Jakarta Sans</option>
+                  <option value="Montserrat">Montserrat</option>
+                  <option value="Roboto">Roboto</option>
+                  <option value="Arial">Arial</option>
+                  <option value="custom" data-i18n="opt.custom">Custom...</option>
+                </select>
+                <input id="subtitle_font_custom" class="input hide mt-2" placeholder="Custom Font Name" data-i18n-placeholder="ph.subtitle_font_custom" />
+             </div>
+             
+             <div class="form-group">
+               <label class="label" data-i18n="label.subtitle_fontsdir">Font Directory</label>
+               <input id="subtitle_fontsdir" class="input" value="fonts" />
+             </div>
+
+            <div class="actions-sticky">
+              <button id="scanBtn" class="btn btn-secondary full-width" data-i18n="btn.scan">Scan Heatmap</button>
+              <button id="clipBtn" class="btn btn-primary full-width" data-i18n="btn.clip">Create Clips</button>
+            </div>
+            
+          </section>
+        </aside>
+
+        <!-- RIGHT COLUMN: RESULTS -->
+        <div class="layout-main">
+          
+          <div id="preview" class="preview-card hide">
+            <div class="preview-thumb">
+              <img id="thumbImg" alt="" />
+            </div>
+            <div class="preview-meta">
+              <div id="pvTitle" class="pvTitle"></div>
+              <div id="pvSub" class="pvSub"></div>
             </div>
           </div>
-        </div>
-        <div id="segments" class="segments"></div>
-      </section>
 
-      <section class="panel">
-        <div class="panelHead">
-          <div class="panelTitle" data-i18n="panel.progress">Progress</div>
-          <div id="jobMeta" class="panelMeta"></div>
+          <section class="panel">
+            <div class="panelHead">
+              <div class="panelTitle" data-i18n="panel.segments">Segments</div>
+              <div class="panelRight">
+                <div class="segMetaLine">
+                  <div id="segSelectedMeta" class="panelMeta"></div>
+                  <div id="segMeta" class="panelMeta"></div>
+                </div>
+                <div id="segControls" class="segControls hide">
+                  <button id="segSelectAllBtn" class="btn ghost smallBtn" type="button" data-i18n="btn.select_all">All</button>
+                  <button id="segClearBtn" class="btn ghost smallBtn" type="button" data-i18n="btn.clear">Clear</button>
+                  <button id="segCreateBtn" class="btn smallBtn" type="button" data-i18n="btn.create_selected">Process Selected</button>
+                </div>
+              </div>
+            </div>
+            <div id="segments" class="segments-list"></div>
+          </section>
+    
+          <section class="panel">
+            <div class="panelHead">
+              <div class="panelTitle" data-i18n="panel.progress">Task Progress</div>
+              <div id="jobMeta" class="panelMeta"></div>
+            </div>
+            <div id="progress" class="progress-container"></div>
+            <div id="outputs" class="outputs-list"></div>
+          </section>
         </div>
-        <div id="progress" class="progress"></div>
-        <div id="outputs" class="outputs"></div>
-      </section>
-    </main>
+      </main>
+    </div>
 
+    <!-- MODAL -->
     <div id="modal" class="modal hide" role="dialog" aria-modal="true">
       <div class="modalBackdrop" id="modalBackdrop"></div>
       <div class="modalCard">
