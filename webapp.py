@@ -13,7 +13,8 @@ import run as core
 
 # --- Add this import ---
 from pyngrok import ngrok
-
+import google.generativeai as genai
+import openai
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 
@@ -78,8 +79,12 @@ def list_outputs(job_dir):
     items = []
     for name in os.listdir(job_dir):
         path = os.path.join(job_dir, name)
-        if os.path.isfile(path) and name.lower().endswith(".mp4"):
-            items.append({"name": name, "size": os.path.getsize(path)})
+        if os.path.isfile(path):
+            if name.lower().endswith(".mp4"):
+               items.append({"name": name, "size": os.path.getsize(path), "type": "video"})
+            elif name.lower().endswith(".srt"):
+               items.append({"name": name, "size": os.path.getsize(path), "type": "subtitle"})
+    
     items.sort(key=lambda x: x["name"])
     return items
 
@@ -305,6 +310,89 @@ def api_job(job_id):
 def serve_clip(job_id, filename):
     job_dir = os.path.join("clips", job_id)
     return send_from_directory(job_dir, filename, as_attachment=True)
+
+
+@app.post("/api/generate_metadata")
+def api_generate_metadata():
+    data = request.get_json(silent=True) or {}
+    
+    provider = data.get("provider", "gemini")
+    api_key = data.get("api_key", "").strip()
+    model_name = data.get("model", "").strip()
+    transcript = data.get("transcript", "").strip()
+    
+    if not api_key:
+        return jsonify({"ok": False, "error": "API Key is required"}), 400
+        
+    if not transcript:
+        return jsonify({"ok": False, "error": "Transcript is empty"}), 400
+        
+    prompt = f"""
+    Based on the following video transcript, generate:
+    1. A catchy, viral Title (max 60 chars)
+    2. A compelling Description (max 300 chars)
+    3. A list of 5-10 comma-separated Keywords/Tags
+
+    Transcript:
+    {transcript[:2000]}
+    
+    Return the response as a valid JSON object with keys: "title", "description", "keywords".
+    Do not wrap in markdown code blocks.
+    """
+    
+    try:
+        result_json = {}
+        
+        if provider == "gemini":
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-pro')
+            response = model.generate_content(prompt)
+            text = response.text.replace("```json", "").replace("```", "").strip()
+            result_json = json.loads(text)
+            
+        elif provider == "grok":
+            if not model_name: model_name = "grok-beta"
+            client = openai.OpenAI(
+                base_url="https://api.x.ai/v1",
+                api_key=api_key
+            )
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that outputs JSON."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            text = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
+            result_json = json.loads(text)
+            
+        elif provider == "openrouter":
+            if not model_name: model_name = "mistralai/mixtral-8x7b-instruct"
+            client = openai.OpenAI(
+                base_url="https://openrouter.ai/api/v1", 
+                api_key=api_key
+            )
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that outputs JSON."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            text = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
+            result_json = json.loads(text)
+            
+        else:
+             return jsonify({"ok": False, "error": f"Unknown provider: {provider}"}), 400
+
+        return jsonify({
+            "ok": True,
+            "data": result_json
+        })
+        
+    except Exception as e:
+        print(f"AI Generation Error: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 # --- Execution block ---
