@@ -639,6 +639,10 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     text=True
                 )
                 
+                # Save SRT to output directory for AI usage
+                final_srt_path = os.path.join(OUTPUT_DIR, f"clip_{index}.srt")
+                shutil.copy2(subtitle_file, final_srt_path)
+
                 os.remove(cropped_file)
                 os.remove(subtitle_file)
             else:
