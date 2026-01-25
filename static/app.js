@@ -497,6 +497,104 @@ function renderSegments(segments) {
   updateSelectedUi();
 }
 
+
+let lastScanSegments = [];
+let lastPreviewUrl = "";
+let currentPreview = null;
+let currentVideoId = "";
+let selectedKeys = new Set();
+
+async function scan() {
+  setBusy(true);
+  try {
+    const { url } = readPayload();
+    const data = await postJson("/api/scan", { url });
+    lastScanSegments = data.segments || [];
+    selectedKeys = new Set();
+    currentVideoId = data.video_id || currentVideoId;
+    $("segMeta").textContent = `${lastScanSegments.length} segments • durasi ~${fmtTime(data.duration || 0)}`;
+    renderSegments(lastScanSegments);
+  } catch (e) {
+    $("segMeta").textContent = e.message;
+    renderSegments([]);
+  } finally {
+    setBusy(false);
+    updateSelectedUi();
+  }
+}
+
+async function preview() {
+  const url = $("url").value.trim();
+  if (!url || url === lastPreviewUrl) return;
+  lastPreviewUrl = url;
+  const box = $("preview");
+  const title = $("pvTitle");
+  const sub = $("pvSub");
+  const img = $("thumbImg");
+  try {
+    title.textContent = t("js.preview.loading");
+    sub.textContent = "";
+    img.removeAttribute("src");
+    box.classList.remove("hide");
+    const data = await postJson("/api/preview", { url });
+    const p = data.preview || {};
+    currentPreview = p;
+    if (p.id) currentVideoId = p.id;
+    title.textContent = p.title || "Untitled";
+    const dur = p.duration != null ? fmtTime(p.duration) : "";
+    const uploader = p.uploader || "";
+    sub.textContent = [uploader, dur].filter(Boolean).join(" • ");
+    if (p.thumbnail) img.src = p.thumbnail;
+  } catch (e) {
+    box.classList.add("hide");
+  }
+}
+
+async function clip() {
+  setBusy(true);
+  try {
+    const payload = readPayload();
+    const data = await postJson("/api/clip", payload);
+    const jobId = data.job_id;
+    await pollJob(jobId);
+  } catch (e) {
+    renderProgress({ status: "error", error: e.message, total: 0, done: 0, id: "" });
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function pollJob(jobId) {
+  const started = Date.now();
+  while (true) {
+    const res = await fetch(`/api/job/${jobId}`);
+    const data = await res.json().catch(() => null);
+    if (!data || !data.ok) throw new Error("Job not found");
+    renderProgress(data.job);
+    if (data.job.status === "done" || data.job.status === "error") return;
+    if (Date.now() - started > 1000 * 60 * 30) throw new Error("Timeout");
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+}
+
+function toggleMode() {
+  const isCustom = $("mode").value === "custom";
+  $("customBox").classList.toggle("hide", !isCustom);
+  $("scanBtn").classList.toggle("hide", isCustom);
+  if (isCustom) {
+    setSegControlsVisible(false);
+    $("segSelectedMeta").textContent = "";
+  } else {
+    setSegControlsVisible(lastScanSegments.length > 0);
+    updateSelectedUi();
+  }
+}
+
+function toggleFont() {
+  const isCustom = $("subtitle_font_select").value === "custom";
+  $("subtitle_font_custom").classList.toggle("hide", !isCustom);
+}
+
 $("mode").addEventListener("change", toggleMode);
 $("subtitle_font_select").addEventListener("change", toggleFont);
 $("url").addEventListener("input", debounce(preview, 500));
@@ -515,66 +613,66 @@ document.addEventListener("keydown", (e) => {
 
 // --- AI Metadata Logic ---
 function initAiSettings() {
-    const provider = localStorage.getItem("ai_provider") || "gemini";
-    $("ai_provider").value = provider;
-    $("ai_api_key").value = localStorage.getItem("ai_api_key_" + provider) || "";
-    $("ai_model").value = localStorage.getItem("ai_model_" + provider) || "";
-    toggleAiProvider();
+  const provider = localStorage.getItem("ai_provider") || "gemini";
+  $("ai_provider").value = provider;
+  $("ai_api_key").value = localStorage.getItem("ai_api_key_" + provider) || "";
+  $("ai_model").value = localStorage.getItem("ai_model_" + provider) || "";
+  toggleAiProvider();
 }
 
 function toggleAiProvider() {
-    const provider = $("ai_provider").value;
-    const isOpenRouter = provider === "openrouter";
-    $("ai_model_group").classList.toggle("hide", !isOpenRouter && provider !== "grok");
-    
-    // Restore key/model for selected provider
-    $("ai_api_key").value = localStorage.getItem("ai_api_key_" + provider) || "";
-    $("ai_model").value = localStorage.getItem("ai_model_" + provider) || "";
+  const provider = $("ai_provider").value;
+  const isOpenRouter = provider === "openrouter";
+  $("ai_model_group").classList.toggle("hide", !isOpenRouter && provider !== "grok");
+
+  // Restore key/model for selected provider
+  $("ai_api_key").value = localStorage.getItem("ai_api_key_" + provider) || "";
+  $("ai_model").value = localStorage.getItem("ai_model_" + provider) || "";
 }
 
 function saveAiSettings() {
-    const provider = $("ai_provider").value;
-    localStorage.setItem("ai_provider", provider);
-    localStorage.setItem("ai_api_key_" + provider, $("ai_api_key").value);
-    localStorage.setItem("ai_model_" + provider, $("ai_model").value);
+  const provider = $("ai_provider").value;
+  localStorage.setItem("ai_provider", provider);
+  localStorage.setItem("ai_api_key_" + provider, $("ai_api_key").value);
+  localStorage.setItem("ai_model_" + provider, $("ai_model").value);
 }
 
 $("ai_provider").addEventListener("change", () => {
-    saveAiSettings(); // Save previous provider's inputs before switching? No, logic above restores.
-    toggleAiProvider();
+  saveAiSettings(); // Save previous provider's inputs before switching? No, logic above restores.
+  toggleAiProvider();
 });
 $("ai_api_key").addEventListener("input", saveAiSettings);
 $("ai_model").addEventListener("input", saveAiSettings);
 
 async function generateMetadata(srtPath, btnEl) {
-    const provider = $("ai_provider").value;
-    const apiKey = $("ai_api_key").value;
-    const model = $("ai_model").value;
+  const provider = $("ai_provider").value;
+  const apiKey = $("ai_api_key").value;
+  const model = $("ai_model").value;
 
-    if (!apiKey) {
-        alert("Please enter API Key in Configuration > AI Metadata");
-        return;
-    }
+  if (!apiKey) {
+    alert("Please enter API Key in Configuration > AI Metadata");
+    return;
+  }
 
-    try {
-        btnEl.disabled = true;
-        btnEl.textContent = "Generating...";
+  try {
+    btnEl.disabled = true;
+    btnEl.textContent = "Generating...";
 
-        // Fetch subtitle text
-        const srtRes = await fetch(srtPath);
-        if (!srtRes.ok) throw new Error("Failed to load subtitle file");
-        const transcript = await srtRes.text();
+    // Fetch subtitle text
+    const srtRes = await fetch(srtPath);
+    if (!srtRes.ok) throw new Error("Failed to load subtitle file");
+    const transcript = await srtRes.text();
 
-        // Call API
-        const data = await postJson("/api/generate_metadata", {
-            provider,
-            api_key: apiKey,
-            model,
-            transcript
-        });
+    // Call API
+    const data = await postJson("/api/generate_metadata", {
+      provider,
+      api_key: apiKey,
+      model,
+      transcript
+    });
 
-        const meta = data.data || {};
-        const html = `
+    const meta = data.data || {};
+    const html = `
             <div class="ai-result">
                 <h3>${meta.title || "No Title"}</h3>
                 <p><strong>Description:</strong><br/>${meta.description || ""}</p>
@@ -582,14 +680,14 @@ async function generateMetadata(srtPath, btnEl) {
                 <button class="btn smallBtn" style="margin-top:10px" onclick="navigator.clipboard.writeText('${(meta.keywords || []).join(", ")}');this.textContent='Copied!'">Copy Keywords</button>
             </div>
         `;
-        openModal("AI Metadata Result", document.createRange().createContextualFragment(html));
+    openModal("AI Metadata Result", document.createRange().createContextualFragment(html));
 
-    } catch (e) {
-         alert("Error: " + e.message);
-    } finally {
-        btnEl.disabled = false;
-        btnEl.textContent = "AI Metadata";
-    }
+  } catch (e) {
+    alert("Error: " + e.message);
+  } finally {
+    btnEl.disabled = false;
+    btnEl.textContent = "AI Metadata";
+  }
 }
 
 
@@ -630,7 +728,7 @@ function renderProgress(job) {
   if (Array.isArray(job.outputs) && job.outputs.length > 0) {
     // Group outputs by name prefix (clip_1.mp4, clip_1.srt) to link them?
     // Simplified: list items, if .srt exists for a video, show AI button next to video
-    
+
     const videos = job.outputs.filter(f => f.type === "video" || f.name.endsWith(".mp4"));
     const subtitles = new Set(job.outputs.filter(f => f.type === "subtitle" || f.name.endsWith(".srt")).map(f => f.name));
 
@@ -638,7 +736,7 @@ function renderProgress(job) {
       const el = document.createElement("div");
       el.className = "out";
       const href = `/clips/${job.id}/${encodeURIComponent(f.name)}`;
-      
+
       const baseName = f.name.substring(0, f.name.lastIndexOf("."));
       const srtName = baseName + ".srt";
       const hasSrt = subtitles.has(srtName);
@@ -646,7 +744,7 @@ function renderProgress(job) {
 
       let aiBtnHtml = "";
       if (hasSrt) {
-          aiBtnHtml = `<button class="btn btn-secondary smallBtn" type="button" data-ai="${srtHref}">AI Metadata</button>`;
+        aiBtnHtml = `<button class="btn btn-secondary smallBtn" type="button" data-ai="${srtHref}">AI Metadata</button>`;
       }
 
       el.innerHTML = `
@@ -665,8 +763,8 @@ function renderProgress(job) {
         openClipPreview(f.name, href);
       });
       el.querySelector("[data-ai]")?.addEventListener("click", (ev) => {
-          ev.preventDefault();
-          generateMetadata(srtHref, ev.target);
+        ev.preventDefault();
+        generateMetadata(srtHref, ev.target);
       });
       out.appendChild(el);
     });
