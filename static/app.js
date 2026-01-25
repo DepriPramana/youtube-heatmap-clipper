@@ -704,7 +704,12 @@ function renderInlineMetadata(container, meta) {
   if (!container || !meta) return;
 
   // Format keywords as hashtags
-  const rawKeywords = meta.keywords || [];
+  let rawKeywords = meta.keywords;
+  if (typeof rawKeywords === 'string') {
+    rawKeywords = rawKeywords.split(',').map(s => s.trim());
+  }
+  if (!Array.isArray(rawKeywords)) rawKeywords = [];
+
   const hashtags = rawKeywords.map(k => k.trim().startsWith("#") ? k.trim() : `#${k.trim().replace(/\s+/g, '')}`).join(" ");
 
   const html = `
