@@ -454,9 +454,8 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
         sys.executable, "-m", "yt_dlp",
         "--force-ipv4",
         "--quiet", "--no-warnings",
-        "--downloader", "ffmpeg",
-        "--downloader-args",
-        f"ffmpeg_i:-ss {start} -to {end} -hide_banner -loglevel error",
+        "--download-sections", f"*{start}-{end}",
+        "--force-keyframes-at-cuts",
         "--merge-output-format", "mkv",
         "-f",
         "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b",
@@ -467,9 +466,8 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
         sys.executable, "-m", "yt_dlp",
         "--force-ipv4",
         "--quiet", "--no-warnings",
-        "--downloader", "ffmpeg",
-        "--downloader-args",
-        f"ffmpeg_i:-ss {start} -to {end} -hide_banner -loglevel error",
+        "--download-sections", f"*{start}-{end}",
+        "--force-keyframes-at-cuts",
         "--merge-output-format", "mkv",
         "-f", "bv*+ba/b",
         "-o", temp_file,
@@ -478,6 +476,7 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
 
     try:
         try:
+            # First attempt with preferred quality
             subprocess.run(
                 cmd_download,
                 check=True,
@@ -487,6 +486,7 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
             )
         except subprocess.CalledProcessError as e:
             stderr = (e.stderr or "").strip()
+            # If preferred format not found, try fallback
             if "Requested format is not available" in stderr:
                 subprocess.run(
                     cmd_download_fallback,
