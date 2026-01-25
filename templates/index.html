@@ -186,6 +186,14 @@
             <input id="ai_model" class="input" placeholder="e.g. anthropic/claude-3-opus" />
             <div class="help">Leave empty for default</div>
           </div>
+          <div class="form-group">
+            <div class="toggle-wrapper" style="margin-top: 12px;">
+              <input type="checkbox" id="ai_auto_gen" class="checkbox" />
+              <label for="ai_auto_gen" class="label"
+                style="display:inline; margin-left:8px; cursor:pointer;">Auto-generate Metadata</label>
+            </div>
+            <div class="help">Automatically generate title/desc/tags when clip is ready.</div>
+          </div>
 
           <div class="actions-sticky">
             <button id="scanBtn" class="btn btn-secondary full-width" data-i18n="btn.scan">Scan Heatmap</button>

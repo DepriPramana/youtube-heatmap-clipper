@@ -617,6 +617,11 @@ function initAiSettings() {
   $("ai_provider").value = provider;
   $("ai_api_key").value = localStorage.getItem("ai_api_key_" + provider) || "";
   $("ai_model").value = localStorage.getItem("ai_model_" + provider) || "";
+
+  // Auto-gen settings
+  const autoGen = localStorage.getItem("ai_auto_gen") === "true";
+  $("ai_auto_gen").checked = autoGen;
+
   toggleAiProvider();
 }
 
@@ -635,29 +640,44 @@ function saveAiSettings() {
   localStorage.setItem("ai_provider", provider);
   localStorage.setItem("ai_api_key_" + provider, $("ai_api_key").value);
   localStorage.setItem("ai_model_" + provider, $("ai_model").value);
+  localStorage.setItem("ai_auto_gen", $("ai_auto_gen").checked);
 }
 
 $("ai_provider").addEventListener("change", () => {
-  saveAiSettings(); // Save previous provider's inputs before switching? No, logic above restores.
+  saveAiSettings();
   toggleAiProvider();
 });
 $("ai_api_key").addEventListener("input", saveAiSettings);
 $("ai_model").addEventListener("input", saveAiSettings);
+$("ai_auto_gen").addEventListener("change", saveAiSettings);
 
-async function generateMetadata(srtPath, btnEl) {
+// Track generated metadata to prevent duplicate polling
+const generatedClips = new Set();
+
+async function generateMetadata(srtPath, clipId, containerEl) {
   const provider = $("ai_provider").value;
   const apiKey = $("ai_api_key").value;
   const model = $("ai_model").value;
 
   if (!apiKey) {
-    alert("Please enter API Key in Configuration > AI Metadata");
+    if (containerEl) containerEl.innerHTML = `<div class="ai-error">API Key required for metadata</div>`;
     return;
   }
 
-  try {
-    btnEl.disabled = true;
-    btnEl.textContent = "Generating...";
+  generatedClips.add(clipId); // Mark as in-progress/done
 
+  let resultContainer = containerEl;
+  if (!resultContainer) {
+    // Find container if auto-gen
+    resultContainer = document.getElementById(`ai-box-${clipId}`);
+  }
+
+  if (resultContainer) {
+    resultContainer.innerHTML = `<div class="ai-loading">Generating Viral Metadata...</div>`;
+    resultContainer.classList.remove("hide");
+  }
+
+  try {
     // Fetch subtitle text
     const srtRes = await fetch(srtPath);
     if (!srtRes.ok) throw new Error("Failed to load subtitle file");
@@ -672,22 +692,42 @@ async function generateMetadata(srtPath, btnEl) {
     });
 
     const meta = data.data || {};
-    const html = `
-            <div class="ai-result">
-                <h3>${meta.title || "No Title"}</h3>
-                <p><strong>Description:</strong><br/>${meta.description || ""}</p>
-                <p><strong>Keywords:</strong><br/><code>${(meta.keywords || []).join(", ")}</code></p>
-                <button class="btn smallBtn" style="margin-top:10px" onclick="navigator.clipboard.writeText('${(meta.keywords || []).join(", ")}');this.textContent='Copied!'">Copy Keywords</button>
-            </div>
-        `;
-    openModal("AI Metadata Result", document.createRange().createContextualFragment(html));
+    renderInlineMetadata(resultContainer, meta);
 
   } catch (e) {
-    alert("Error: " + e.message);
-  } finally {
-    btnEl.disabled = false;
-    btnEl.textContent = "AI Metadata";
+    if (resultContainer) resultContainer.innerHTML = `<div class="ai-error">Error: ${e.message}</div>`;
+    generatedClips.delete(clipId); // Retry allowed
   }
+}
+
+function renderInlineMetadata(container, meta) {
+  if (!container || !meta) return;
+
+  // Format keywords as hashtags
+  const rawKeywords = meta.keywords || [];
+  const hashtags = rawKeywords.map(k => k.trim().startsWith("#") ? k.trim() : `#${k.trim().replace(/\s+/g, '')}`).join(" ");
+
+  const html = `
+        <div class="ai-content">
+            <div class="ai-row">
+                <div class="ai-label">TITLE</div>
+                <div class="ai-val">${meta.title || "-"}</div>
+                <button class="btn iconBtn smallBtn" onclick="navigator.clipboard.writeText('${(meta.title || "").replace(/'/g, "\\'")}')" title="Copy Title">📋</button>
+            </div>
+            <div class="ai-row">
+                <div class="ai-label">DESCRIPTION</div>
+                <div class="ai-val text-sm">${meta.description || "-"}</div>
+                <button class="btn iconBtn smallBtn" onclick="navigator.clipboard.writeText('${(meta.description || "").replace(/'/g, "\\'")}')" title="Copy Desc">📋</button>
+            </div>
+            <div class="ai-row">
+                <div class="ai-label">HASHTAGS</div>
+                <div class="ai-val code">${hashtags}</div>
+                <button class="btn iconBtn smallBtn" onclick="navigator.clipboard.writeText('${(hashtags || "").replace(/'/g, "\\'")}')" title="Copy Tags">📋</button>
+            </div>
+        </div>
+    `;
+  container.innerHTML = html;
+  container.classList.remove("hide");
 }
 
 
@@ -726,9 +766,6 @@ function renderProgress(job) {
   }
 
   if (Array.isArray(job.outputs) && job.outputs.length > 0) {
-    // Group outputs by name prefix (clip_1.mp4, clip_1.srt) to link them?
-    // Simplified: list items, if .srt exists for a video, show AI button next to video
-
     const videos = job.outputs.filter(f => f.type === "video" || f.name.endsWith(".mp4"));
     const subtitles = new Set(job.outputs.filter(f => f.type === "subtitle" || f.name.endsWith(".srt")).map(f => f.name));
 
@@ -741,32 +778,59 @@ function renderProgress(job) {
       const srtName = baseName + ".srt";
       const hasSrt = subtitles.has(srtName);
       const srtHref = `/clips/${job.id}/${encodeURIComponent(srtName)}`;
+      const clipId = `${job.id}_${baseName}`;
 
-      let aiBtnHtml = "";
+      // Inline AI Section
+      let aiSectionHtml = "";
       if (hasSrt) {
-        aiBtnHtml = `<button class="btn btn-secondary smallBtn" type="button" data-ai="${srtHref}">AI Metadata</button>`;
+        aiSectionHtml = `
+            <div id="ai-box-${clipId}" class="ai-box hide"></div>
+            <div class="ai-actions">
+                 <button class="btn btn-secondary smallBtn" type="button" data-ai-manual="${srtHref}" data-target="ai-box-${clipId}" data-clip="${clipId}">Generate Metadata</button>
+            </div>
+          `;
       }
 
       el.innerHTML = `
-        <div class="outLeft">
-          <a href="${href}" target="_blank" rel="noreferrer">${f.name}</a>
-          <div class="small">${Math.round((f.size || 0) / 1024)} KB</div>
+        <div class="outMain">
+            <div class="outLeft">
+                <a href="${href}" target="_blank" rel="noreferrer">${f.name}</a>
+                <div class="small">${Math.round((f.size || 0) / 1024)} KB</div>
+            </div>
+            <div class="outRight">
+                <button class="btn ghost smallBtn" type="button" data-play="1">Play</button>
+                <a class="btn smallBtn" href="${href}" download>Download</a>
+            </div>
         </div>
-        <div class="outRight">
-          <button class="btn ghost smallBtn" type="button" data-play="1">Play</button>
-          ${aiBtnHtml}
-          <a class="btn smallBtn" href="${href}" download>Download</a>
-        </div>
+        ${aiSectionHtml}
       `;
+
       el.querySelector("[data-play]")?.addEventListener("click", (ev) => {
         ev.preventDefault();
         openClipPreview(f.name, href);
       });
-      el.querySelector("[data-ai]")?.addEventListener("click", (ev) => {
-        ev.preventDefault();
-        generateMetadata(srtHref, ev.target);
-      });
+
+      const manualBtn = el.querySelector("[data-ai-manual]");
+      if (manualBtn) {
+        manualBtn.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          const container = document.getElementById(ev.target.dataset.target);
+          generateMetadata(srtHref, clipId, container);
+          ev.target.remove(); // Remove button after clicking, logic handled in container
+        });
+      }
+
       out.appendChild(el);
+
+      // Auto-Generate Logic
+      if (hasSrt && $("ai_auto_gen").checked && !generatedClips.has(clipId)) {
+        // Trigger automatically
+        const container = document.getElementById(`ai-box-${clipId}`);
+        // Hide manual button if auto running
+        if (manualBtn) manualBtn.style.display = 'none';
+
+        generateMetadata(srtHref, clipId, container);
+      }
     });
   }
 }
