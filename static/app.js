@@ -627,8 +627,8 @@ function initAiSettings() {
 
 function toggleAiProvider() {
   const provider = $("ai_provider").value;
-  const isOpenRouter = provider === "openrouter";
-  $("ai_model_group").classList.toggle("hide", !isOpenRouter && provider !== "grok");
+  // Show model input for all providers now, as user requested model selection for Gemini too
+  $("ai_model_group").classList.remove("hide");
 
   // Restore key/model for selected provider
   $("ai_api_key").value = localStorage.getItem("ai_api_key_" + provider) || "";

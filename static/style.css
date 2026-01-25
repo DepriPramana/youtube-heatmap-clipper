@@ -845,17 +845,74 @@ body {
   z-index: 9999;
 }
 
+/* Top Progress styles have been moved/updated */
+
+/* Top Progress & Dynamic Island */
+.topProgressWrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  pointer-events: none;
+  /* Allow clicking through */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .topProgressBar {
+  width: 100%;
   height: 3px;
   background: transparent;
 }
 
 .topProgressFill {
   height: 100%;
-  background: var(--accent-secondary);
+  background: var(--accent-gradient);
   width: 0;
-  box-shadow: 0 0 10px var(--accent-secondary);
-  transition: width 0.2s;
+  box-shadow: 0 0 15px var(--accent-primary);
+  transition: width 0.3s ease-out;
+}
+
+.topProgressText {
+  margin-top: 12px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateY(0);
+  opacity: 1;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+}
+
+/* Hide state for the wrapper triggers the animation out */
+.topProgressWrap.hide .topProgressText {
+  transform: translateY(-20px);
+  opacity: 0;
+}
+
+.topProgressWrap.hide .topProgressBar {
+  opacity: 0;
+  transition: opacity 0.5s 0.2s;
+}
+
+.topProgressWrap.hide {
+  display: flex !important;
+  /* Override generic .hide to allow transition */
+  visibility: hidden;
+  transition: visibility 0s 0.6s;
+  /* Wait for animations */
 }
 
 /* Modal */

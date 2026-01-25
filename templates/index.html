@@ -183,8 +183,14 @@
           </div>
           <div class="form-group hide" id="ai_model_group">
             <label class="label">Model (Optional)</label>
-            <input id="ai_model" class="input" placeholder="e.g. anthropic/claude-3-opus" />
-            <div class="help">Leave empty for default</div>
+            <input id="ai_model" class="input" placeholder="e.g. gemini-1.5-flash" list="ai_models_list" />
+            <div class="help">Leave empty for default (gemini-1.5-flash)</div>
+            <datalist id="ai_models_list">
+              <option value="gemini-1.5-flash">
+              <option value="gemini-1.5-pro">
+              <option value="gemini-2.0-flash-exp">
+              <option value="gemini-pro">
+            </datalist>
           </div>
           <div class="form-group">
             <div class="toggle-wrapper" style="margin-top: 12px;">

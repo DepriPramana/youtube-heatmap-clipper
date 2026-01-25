@@ -345,7 +345,9 @@ def api_generate_metadata():
         
         if provider == "gemini":
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-pro')
+            # Use user provided model or default to gemini-1.5-flash
+            target_model = model_name if model_name else "gemini-1.5-flash"
+            model = genai.GenerativeModel(target_model)
             response = model.generate_content(prompt)
             text = response.text.replace("```json", "").replace("```", "").strip()
             result_json = json.loads(text)
