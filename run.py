@@ -80,7 +80,7 @@ def parse_args():
     parser.add_argument("--url", help="YouTube URL (watch/shorts/youtu.be)")
     parser.add_argument(
         "--crop",
-        choices=["default", "split_left", "split_right"],
+        choices=["default", "split_left", "split_right", "smart_speaker"],
         help="Crop mode",
     )
     parser.add_argument(
@@ -230,14 +230,16 @@ def cek_dependensi(install_whisper=False, fatal=True):
 
     coba_masukkan_ffmpeg_ke_path()
     
-    ffmpeg_path = shutil.which("ffmpeg")
-    print(f"[DEBUG] Found ffmpeg at: {ffmpeg_path}")
-    if ffmpeg_path:
-        try:
-            res = subprocess.run([ffmpeg_path, "-version"], capture_output=True, text=True)
-            print(f"[DEBUG] ffmpeg version: {res.stdout.splitlines()[0] if res.stdout else 'Unknown'}")
-        except Exception as e:
-            print(f"[DEBUG] Failed to run ffmpeg -version: {e}")
+    coba_masukkan_ffmpeg_ke_path()
+    
+    # ffmpeg_path = shutil.which("ffmpeg")
+    # print(f"[DEBUG] Found ffmpeg at: {ffmpeg_path}")
+    # if ffmpeg_path:
+    #     try:
+    #         res = subprocess.run([ffmpeg_path, "-version"], capture_output=True, text=True)
+    #         print(f"[DEBUG] ffmpeg version: {res.stdout.splitlines()[0] if res.stdout else 'Unknown'}")
+    #     except Exception as e:
+    #         print(f"[DEBUG] Failed to run ffmpeg -version: {e}")
 
     if not ffmpeg_tersedia():
         print("FFmpeg not found. Please install FFmpeg and ensure it is in PATH.")
@@ -493,9 +495,9 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
     cmd_download = [
         sys.executable, "-m", "yt_dlp",
         "--force-ipv4",
-        "--verbose", # DEBUG: verbose
+        # "--verbose", # DEBUG: verbose
         "--extractor-args", "youtube:player_client=android",
-        # "--quiet", "--no-warnings",
+        "--quiet", "--no-warnings",
         "--download-sections", f"*{start}-{end}",
         "--force-keyframes-at-cuts",
         "--merge-output-format", "mkv",
@@ -507,9 +509,9 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
     cmd_download_fallback = [
         sys.executable, "-m", "yt_dlp",
         "--force-ipv4",
-        "--verbose", # DEBUG: verbose
+        # "--verbose", # DEBUG: verbose
         "--extractor-args", "youtube:player_client=android",
-        # "--quiet", "--no-warnings",
+        "--quiet", "--no-warnings",
         "--download-sections", f"*{start}-{end}",
         "--force-keyframes-at-cuts",
         "--merge-output-format", "mkv",
@@ -519,7 +521,7 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
     ]
 
     try:
-        print(f"[DEBUG] Running download command: {cmd_download}")
+        # print(f"[DEBUG] Running download command: {cmd_download}")
         try:
             # First attempt with preferred quality
             subprocess.run(
@@ -575,6 +577,70 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                     "-i", temp_file,
                     "-vf", vf,
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-c:a", "aac", "-b:a", "128k",
+                    cropped_file
+                ]
+        elif crop_mode == "smart_speaker":
+            # Smart Speaker Mode: Auto-detect and crop to active speaker's face
+            if callable(event_hook):
+                try:
+                    event_hook("stage", {"stage": "face_detection", "clip_index": index})
+                except Exception:
+                    pass
+            
+            print("  Detecting active speaker...")
+            try:
+                from speaker_detector import ActiveSpeakerDetector
+                
+                detector = ActiveSpeakerDetector()
+                speaker_pos = detector.get_primary_speaker_position(temp_file, sample_frames=20)
+                
+                if speaker_pos and out_w and out_h:
+                    # Crop to speaker's face position
+                    cx, cy = speaker_pos
+                    
+                    # Calculate crop coordinates (center on face)
+                    # First scale to target height, then crop to target width centered on face
+                    print(f" Face detected at ({cx}, {cy}), cropping to speaker...")
+                    
+                    # Build smart crop filter
+                    # 1. Scale to output height
+                    # 2. Crop to output width, centered on face x-position
+                    vf = f"scale=-2:{out_h},crop={out_w}:{out_h}:if(gte(iw\\,{out_w})\\,min(max({cx}-{out_w}/2\\,0)\\,iw-{out_w})\\,0):0"
+                    vf = apply_wm_simple(vf)
+                    
+                    cmd_crop = [
+                        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                        "-i", temp_file,
+                        "-vf", vf,
+                        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                        "-c:a", "aac", "-b:a", "128k",
+                        cropped_file
+                    ]
+                else:
+                    # Fallback to center crop if face detection fails
+                    print("  No face detected, using center crop...")
+                    vf = build_cover_scale_crop_vf(out_w or 720, out_h or 1280) if OUTPUT_RATIO != "original" else None
+                    vf = apply_wm_simple(vf)
+                    cmd_crop = [
+                        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                        "-i", temp_file,
+                        *([] if not vf else ["-vf", vf]),
+                        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                        "-c:a", "aac", "-b:a", "128k",
+                        cropped_file
+                    ]
+            except Exception as e:
+                # Fallback to center crop on error
+                print(f"  Face detection failed: {e}")
+                print("  Using center crop...")
+                vf = build_cover_scale_crop_vf(out_w or 720, out_h or 1280) if OUTPUT_RATIO != "original" else None
+                vf = apply_wm_simple(vf)
+                cmd_crop = [
+                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                    "-i", temp_file,
+                    *([] if not vf else ["-vf", vf]),
                     "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
                     "-c:a", "aac", "-b:a", "128k",
                     cropped_file
@@ -761,8 +827,8 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
 
         print(f"Failed to generate this clip.")
         print(f"Error details: {e.stderr if e.stderr else e.stdout}")
-        print(f"STDOUT: {e.stdout}")
-        print(f"STDERR: {e.stderr}")
+        # print(f"STDOUT: {e.stdout}")
+        # print(f"STDERR: {e.stderr}")
         return False
     except Exception as e:
         # Cleanup temp files
