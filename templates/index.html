@@ -107,12 +107,29 @@
                 <option value="split_right" data-i18n="opt.crop.split_right">Split Right</option>
                 <option value="split_top" data-i18n="opt.crop.split_top">Split Top</option>
                 <option value="split_bottom" data-i18n="opt.crop.split_bottom">Split Bottom</option>
+                <option value="custom_manual" data-i18n="opt.crop.custom_manual">Custom Manual</option>
               </select>
             </div>
             <div class="form-group">
               <label class="label" data-i18n="label.padding">Padding (s)</label>
               <input id="padding" class="input" type="number" min="0" value="10" />
             </div>
+          </div>
+
+          <!-- Custom Crop Preview Area -->
+          <div id="customCropBox" class="form-group hide">
+            <label class="label">Custom Crop Preview</label>
+            <div class="help" style="margin-bottom: 8px;">Drag to select area / Tarik kotak untuk pilih area</div>
+            <div id="cropPreviewContainer"
+              style="position: relative; max-width: 100%; border: 1px solid #333; overflow: hidden;">
+              <img id="cropImage" src="" style="width: 100%; display: block;" />
+              <div id="cropSelection"
+                style="position: absolute; border: 2px solid #00ff00; background: rgba(0, 255, 0, 0.2); display: none;">
+              </div>
+            </div>
+            <button id="btnLoadPreview" class="btn btn-secondary" style="margin-top: 8px; width: 100%;">
+              Load Preview Image
+            </button>
           </div>
           <div class="form-group">
             <label class="label" data-i18n="label.max_clips">Max Clips</label>

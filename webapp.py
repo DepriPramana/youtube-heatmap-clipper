@@ -110,6 +110,7 @@ def run_job(job_id, payload):
         padding = safe_int(payload.get("padding"), 10)
         max_clips = safe_int(payload.get("max_clips"), 10)
         mode = payload.get("mode") or "heatmap"
+        custom_crop = payload.get("custom_crop")
         set_job(job_id, subtitle_enabled=subtitle)
 
         core.WHISPER_MODEL = whisper_model
@@ -183,6 +184,7 @@ def run_job(job_id, payload):
             ok = core.proses_satu_clip(
                 video_id, item, idx, total_duration, crop, subtitle, 
                 watermark_text=watermark_text, watermark_pos=watermark_pos, 
+                custom_crop=custom_crop,
                 event_hook=event_hook
             )
             if ok:
@@ -302,6 +304,66 @@ def api_clip():
     t = threading.Thread(target=run_job, args=(job_id, payload), daemon=True)
     t.start()
     return jsonify({"ok": True, "job_id": job_id})
+
+
+@app.route('/api/preview-frame', methods=['POST'])
+def preview_frame():
+    data = request.json or {}
+    url = data.get("url")
+    
+    if not url:
+        return jsonify({"ok": False, "error": "URL required"})
+        
+    try:
+        # Create preview directory if not exists
+        preview_dir = os.path.join("static", "previews")
+        os.makedirs(preview_dir, exist_ok=True)
+        
+        # Hash URL to get consistent filename
+        import hashlib
+        url_hash = hashlib.md5(url.encode()).hexdigest()
+        preview_filename = f"preview_{url_hash}.jpg"
+        preview_path = os.path.join(preview_dir, preview_filename)
+        
+        # Check if preview already exists
+        if os.path.exists(preview_path):
+             return jsonify({"ok": True, "url": f"/static/previews/{preview_filename}"})
+             
+        # If not, we need to download a snippet or get direct URL
+        # For simplicity, let's use yt-dlp to get the direct video URL
+        # and then ffmpeg to grab a frame from the middle duration
+        
+        # 1. Get video info (direct URL and duration)
+        cmd_info = [
+            "yt-dlp", "--dump-json", "--skip-download", url
+        ]
+        info_json = subprocess.check_output(cmd_info).decode()
+        info = json.loads(info_json)
+        
+        video_url = info.get("url")
+        duration = info.get("duration", 60)
+        
+        if not video_url:
+            raise Exception("Could not get video URL")
+            
+        # 2. Extract frame from 20% timestamp (to avoid intros)
+        timestamp = int(duration * 0.2)
+        
+        cmd_ffmpeg = [
+            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            "-ss", str(timestamp),
+            "-i", video_url,
+            "-frames:v", "1",
+            "-q:v", "2",
+            preview_path
+        ]
+        subprocess.check_call(cmd_ffmpeg)
+        
+        return jsonify({"ok": True, "url": f"/static/previews/{preview_filename}"})
+        
+    except Exception as e:
+        print(f"Preview Error: {e}")
+        return jsonify({"ok": False, "error": str(e)})
 
 
 @app.get("/api/job/<job_id>")

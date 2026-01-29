@@ -457,7 +457,7 @@ def format_timestamp(seconds):
     return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
 
 
-def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default", use_subtitle=False, watermark_text=None, watermark_pos="bottom_right", event_hook=None):
+def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default", use_subtitle=False, watermark_text=None, watermark_pos="bottom_right", custom_crop=None, event_hook=None):
     """
     Download, crop, and export a single vertical clip
     based on a heatmap segment.
@@ -899,86 +899,33 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     "-c:a", "aac", "-b:a", "128k",
                     cropped_file
                 ]
-        elif crop_mode == "smart_speaker":
-            # Smart Speaker Mode: Auto-detect and crop to active speaker's face
-            if callable(event_hook):
-                try:
-                    event_hook("stage", {"stage": "face_detection", "clip_index": index})
-                except Exception:
-                    pass
+        elif crop_mode == "custom_manual":
+            # Custom Manual Crop
+            # Uses coordinates provided by user (normalized 0.0-1.0)
+            if not custom_crop:
+                 print("  [WARN] Custom crop selected but no coordinates provided. Fallback to default.")
+                 vf = build_cover_scale_crop_vf(out_w, out_h)
+                 vf = apply_wm_simple(vf)
+            else:
+                 cx = custom_crop.get('x', 0)
+                 cy = custom_crop.get('y', 0)
+                 cw = custom_crop.get('w', 1)
+                 ch = custom_crop.get('h', 1)
+                 
+                 print(f"  Using Custom Crop: x={cx:.2f}, y={cy:.2f}, w={cw:.2f}, h={ch:.2f}")
+                 
+                 # Crop using FFmpeg expressions (iw*factor)
+                 vf = f"crop=iw*{cw}:ih*{ch}:iw*{cx}:ih*{cy},scale={out_w}:{out_h},setsar=1"
+                 vf = apply_wm_simple(vf)
             
-            print("  Detecting active speaker...")
-            try:
-                from speaker_detector import ActiveSpeakerDetector
-                import cv2
-                
-                detector = ActiveSpeakerDetector()
-                speaker_pos = detector.get_primary_speaker_position(temp_file, sample_frames=60)
-                
-                if speaker_pos and out_w and out_h:
-                    # Get original video dimensions
-                    cap = cv2.VideoCapture(temp_file)
-                    orig_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                    orig_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                    cap.release()
-                    
-                    cx, cy = speaker_pos
-                    print(f"  Face detected at ({cx}, {cy}) in {orig_w}x{orig_h} video")
-                    
-                    # Calculate scaling factor (we scale to match output height)
-                    scale_factor = out_h / orig_h
-                    
-                    # Calculate new face position after scaling
-                    new_cx = int(cx * scale_factor)
-                    scaled_w = int(orig_w * scale_factor)
-                    
-                    # Calculate crop X position (center crop on face)
-                    crop_x = max(0, min(new_cx - out_w // 2, scaled_w - out_w))
-                    
-                    print(f"  After scaling: face at ({new_cx}, -), scaling to {scaled_w}x{out_h}")
-                    print(f"  Cropping {out_w}x{out_h} at x={crop_x} to center on speaker")
-                    
-                    # Build smart crop filter
-                    # 1. Scale to output height (width auto-calculated to maintain aspect ratio)
-                    # 2. Crop to output width at calculated X position
-                    vf = f"scale=-2:{out_h},crop={out_w}:{out_h}:{crop_x}:0"
-                    vf = apply_wm_simple(vf)
-                    
-                    cmd_crop = [
-                        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-                        "-i", temp_file,
-                        "-vf", vf,
-                        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
-                        "-c:a", "aac", "-b:a", "128k",
-                        cropped_file
-                    ]
-                else:
-                    # Fallback to center crop if face detection fails
-                    print("  No face detected, using center crop...")
-                    vf = build_cover_scale_crop_vf(out_w or 720, out_h or 1280) if OUTPUT_RATIO != "original" else None
-                    vf = apply_wm_simple(vf)
-                    cmd_crop = [
-                        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-                        "-i", temp_file,
-                        *([] if not vf else ["-vf", vf]),
-                        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
-                        "-c:a", "aac", "-b:a", "128k",
-                        cropped_file
-                    ]
-            except Exception as e:
-                # Fallback to center crop on error
-                print(f"  Face detection failed: {e}")
-                print("  Using center crop...")
-                vf = build_cover_scale_crop_vf(out_w or 720, out_h or 1280) if OUTPUT_RATIO != "original" else None
-                vf = apply_wm_simple(vf)
-                cmd_crop = [
-                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-                    "-i", temp_file,
-                    *([] if not vf else ["-vf", vf]),
-                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
-                    "-c:a", "aac", "-b:a", "128k",
-                    cropped_file
-                ]
+            cmd_crop = [
+                "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                "-i", temp_file,
+                "-vf", vf,
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                "-c:a", "aac", "-b:a", "128k",
+                cropped_file
+            ]
         elif crop_mode == "split_left":
             if OUTPUT_RATIO == "original" or not out_w or not out_h or out_h < out_w:
                 vf = build_cover_scale_crop_vf(out_w or 720, out_h or 1280) if OUTPUT_RATIO != "original" else None

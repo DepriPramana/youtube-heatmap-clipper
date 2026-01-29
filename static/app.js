@@ -364,6 +364,7 @@ function readPayload() {
     watermark_pos: $("watermark_pos").value,
     start: $("start").value || "",
     end: $("end").value || "",
+    custom_crop: currentCustomCrop,
   };
 }
 
@@ -510,7 +511,12 @@ let lastScanSegments = [];
 let lastPreviewUrl = "";
 let currentPreview = null;
 let currentVideoId = "";
+let lastScanSegments = [];
+let lastPreviewUrl = "";
+let currentPreview = null;
+let currentVideoId = "";
 let selectedKeys = new Set();
+let currentCustomCrop = null;
 
 async function scan() {
   setBusy(true);
@@ -597,6 +603,124 @@ function toggleMode() {
     updateSelectedUi();
   }
 }
+
+function toggleCropMode() {
+  const isCustom = $("crop").value === "custom_manual";
+  $("customCropBox").classList.toggle("hide", !isCustom);
+}
+
+async function loadPreviewFrame() {
+  const url = $("url").value.trim();
+  if (!url) return alert("URL required");
+  $("btnLoadPreview").disabled = true;
+  $("btnLoadPreview").textContent = "Loading...";
+  try {
+    const data = await postJson("/api/preview-frame", { url });
+    if (data.url) {
+      const img = $("cropImage");
+      img.onload = () => {
+        // Reset selection
+        $("cropSelection").style.display = "none";
+        currentCustomCrop = null;
+      };
+      img.src = data.url;
+    }
+  } catch (e) {
+    alert("Error loading preview: " + e.message);
+  } finally {
+    $("btnLoadPreview").disabled = false;
+    $("btnLoadPreview").textContent = "Load Preview Image";
+  }
+}
+
+function initCustomCrop() {
+  const container = $("cropPreviewContainer");
+  const selection = $("cropSelection");
+  const img = $("cropImage");
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+
+  container.addEventListener("mousedown", (e) => {
+    if (!img.src) return;
+    isDragging = true;
+    const rect = container.getBoundingClientRect();
+    startX = e.clientX - rect.left;
+    startY = e.clientY - rect.top;
+
+    selection.style.left = startX + "px";
+    selection.style.top = startY + "px";
+    selection.style.width = "0px";
+    selection.style.height = "0px";
+    selection.style.display = "block";
+  });
+
+  container.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    const rect = container.getBoundingClientRect();
+    const currentX = e.clientX - rect.left;
+    const currentY = e.clientY - rect.top;
+
+    const x = Math.min(startX, currentX);
+    const y = Math.min(startY, currentY);
+    const w = Math.abs(currentX - startX);
+    const h = Math.abs(currentY - startY);
+
+    selection.style.left = x + "px";
+    selection.style.top = y + "px";
+    selection.style.width = w + "px";
+    selection.style.height = h + "px";
+  });
+
+  container.addEventListener("mouseup", (e) => {
+    if (!isDragging) return;
+    isDragging = false;
+
+    const rect = container.getBoundingClientRect();
+    // Calculate normalized coordinates (0..1) based on displayed image size
+    // Note: The displayed image might be scaled, but we want relative coords to original
+    // Actually, easiest is to send relative (0.0-1.0) coords to backend
+
+    const style = window.getComputedStyle(selection);
+    const selX = parseFloat(style.left);
+    const selY = parseFloat(style.top);
+    const selW = parseFloat(style.width);
+    const selH = parseFloat(style.height);
+
+    if (selW < 10 || selH < 10) {
+      selection.style.display = "none";
+      currentCustomCrop = null;
+      return;
+    }
+
+    // Use image client dimensions (displayed size)
+    const imgW = img.clientWidth;
+    const imgH = img.clientHeight;
+
+    if (imgW > 0 && imgH > 0) {
+      currentCustomCrop = {
+        x: selX / imgW,
+        y: selY / imgH,
+        w: selW / imgW,
+        h: selH / imgH
+      };
+      console.log("Custom Crop:", currentCustomCrop);
+    }
+  });
+
+  // Also stop dragging if mouse leaves container
+  container.addEventListener("mouseleave", () => {
+    if (isDragging) {
+      // trigger mouseup logic or just cancel? Let's treat as mouseup
+      const event = new MouseEvent('mouseup', {});
+      container.dispatchEvent(event);
+    }
+  });
+}
+
+$("crop").addEventListener("change", toggleCropMode);
+$("btnLoadPreview").addEventListener("click", loadPreviewFrame);
+initCustomCrop();
 
 function toggleFont() {
   const isCustom = $("subtitle_font_select").value === "custom";
