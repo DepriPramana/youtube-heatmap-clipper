@@ -373,30 +373,57 @@ def preview_frame():
             
         # 2. Extract frame from specific timestamp or 20% default
         ts_req = data.get("timestamp")
-        if ts_req is not None:
-            try:
-                timestamp = int(float(ts_req))
-                # Ensure timestamp is within duration
-                timestamp = max(0, min(timestamp, int(duration - 1)))
-                preview_filename = f"preview_{url_hash}_t{timestamp}.jpg"
-                preview_path = os.path.join(preview_dir, preview_filename)
-                
-                if os.path.exists(preview_path):
-                     return jsonify({"ok": True, "url": f"/static/previews/{preview_filename}"})
-            except:
-                timestamp = int(duration * 0.2)
-        else:
-            timestamp = int(duration * 0.2)
+        timestamp = int(duration * 0.2)
         
+        if ts_req is not None:
+             try:
+                 ts_val = int(float(ts_req))
+                 timestamp = max(0, min(ts_val, int(duration - 1)))
+                 preview_filename = f"preview_{url_hash}_t{timestamp}.jpg"
+                 preview_path = os.path.join(preview_dir, preview_filename)
+             except:
+                 pass
+        
+        if os.path.exists(preview_path):
+             return jsonify({"ok": True, "url": f"/static/previews/{preview_filename}"})
+             
+        # ROBUST STRATEGY: Download snippet using yt-dlp, then extract frame
+        # This handles HLS, DASH, and Auth Cookies automatically
+        temp_snippet = f"temp_snippet_{url_hash}_{timestamp}.mp4"
+        start_dl = timestamp
+        end_dl = timestamp + 3 # Download 3 seconds
+        
+        cmd_dl_snippet = [
+            "yt-dlp", "--force-ipv4", "--quiet", "--no-warnings",
+            "--download-sections", f"*{start_dl}-{end_dl}",
+            "-f", "best[height<=720][ext=mp4]/best[ext=mp4]/best",
+             "--force-keyframes-at-cuts",
+            "-o", temp_snippet,
+            url
+        ]
+        
+        print(f"[PREVIEW] Downloading snippet: {start_dl}s - {end_dl}s")
+        subprocess.check_call(cmd_dl_snippet)
+        
+        if not os.path.exists(temp_snippet):
+             raise Exception("Failed to download video snippet")
+             
+        # Extract frame from the local snippet
+        # We take the first frame of the snippet
         cmd_ffmpeg = [
             "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-            "-ss", str(timestamp),
-            "-i", video_url,
+            "-i", temp_snippet,
             "-frames:v", "1",
             "-q:v", "2",
             preview_path
         ]
         subprocess.check_call(cmd_ffmpeg)
+        
+        # Cleanup
+        try:
+             os.remove(temp_snippet)
+        except:
+             pass
         
         return jsonify({"ok": True, "url": f"/static/previews/{preview_filename}"})
         
