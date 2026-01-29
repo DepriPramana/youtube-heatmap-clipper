@@ -763,10 +763,27 @@ function initCustomCrop() {
     const currentX = e.clientX - rect.left;
     const currentY = e.clientY - rect.top;
 
-    const x = Math.min(startX, currentX);
-    const y = Math.min(startY, currentY);
-    const w = Math.abs(currentX - startX);
-    const h = Math.abs(currentY - startY);
+    let x = Math.min(startX, currentX);
+    let y = Math.min(startY, currentY);
+    let w = Math.abs(currentX - startX);
+    let h = Math.abs(currentY - startY);
+
+    // Aspect Ratio Lock Logic
+    const isLocked = $("cropRatioLock") && $("cropRatioLock").checked;
+    if (isLocked) {
+      // Single: 9:16 (0.5625), Dual: 9:8 (1.125)
+      const targetRatio = isDualCropMode ? (9 / 8) : (9 / 16);
+
+      // Calculate Height based on Width to maintain ratio
+      h = w / targetRatio;
+
+      // Re-calculate Y based on drag direction
+      if (currentY < startY) {
+        y = startY - h; // Growing upwards
+      } else {
+        y = startY; // Growing downwards
+      }
+    }
 
     // Target correct box
     let activeSel = selection;
@@ -839,6 +856,65 @@ function initCustomCrop() {
       if (activeSegmentIndex >= 0) {
         saveSegmentCrop();
       }
+    }
+  });
+
+  // Nudge with Keyboard (Arrow Keys)
+  document.addEventListener("keydown", (e) => {
+    // Check if Custom Crop box is visible
+    if ($("customCropBox").classList.contains("hide")) return;
+
+    const step = e.shiftKey ? 10 : 1;
+    let dx = 0;
+    let dy = 0;
+
+    switch (e.key) {
+      case "ArrowLeft": dx = -step; break;
+      case "ArrowRight": dx = step; break;
+      case "ArrowUp": dy = -step; break;
+      case "ArrowDown": dy = step; break;
+      default: return; // Exit if not arrow key
+    }
+
+    e.preventDefault(); // Prevent scrolling
+
+    // Target active box
+    let activeSel = selection;
+    let targetId = "1";
+    if (isDualCropMode) {
+      targetId = document.querySelector('input[name="dualCropTarget"]:checked').value;
+      if (targetId === "2") activeSel = $("cropSelection2");
+    }
+
+    // Current Style
+    let x = parseFloat(activeSel.style.left) || 0;
+    let y = parseFloat(activeSel.style.top) || 0;
+    let w = parseFloat(activeSel.style.width) || 0;
+    let h = parseFloat(activeSel.style.height) || 0;
+
+    // Update Pos
+    x += dx;
+    y += dy;
+
+    activeSel.style.left = x + "px";
+    activeSel.style.top = y + "px";
+
+    // Update Logic (Save)
+    const img = $("cropImage");
+    const imgW = img.clientWidth;
+    const imgH = img.clientHeight;
+
+    if (imgW > 0 && imgH > 0 && w > 0 && h > 0) {
+      const cropData = { x: x / imgW, y: y / imgH, w: w / imgW, h: h / imgH };
+
+      if (isDualCropMode) {
+        if (targetId === "1") currentCustomCrop = cropData;
+        else currentCustomCrop2 = cropData;
+      } else {
+        currentCustomCrop = cropData;
+      }
+
+      if (activeSegmentIndex >= 0) saveSegmentCrop();
     }
   });
 

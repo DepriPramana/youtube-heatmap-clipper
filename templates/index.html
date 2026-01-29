@@ -142,7 +142,17 @@
               </label>
             </div>
 
-            <div class="help" style="margin-bottom: 8px;">Drag to select area / Tarik kotak untuk pilih area</div>
+            <div class="row items-center mb-2">
+              <div class="toggle-wrapper">
+                <input type="checkbox" id="cropRatioLock" class="checkbox">
+                <label for="cropRatioLock" class="label"
+                  style="display:inline; margin-left:8px; cursor:pointer; font-size:0.9em;">🔒 Lock Aspect Ratio
+                  (Prevents Distortion)</label>
+              </div>
+            </div>
+
+            <div class="help" style="margin-bottom: 8px;">Drag to select area / Tarik kotak untuk pilih area<br />Use
+              Arrow Keys to move • Shift+Arrow to resize</div>
             <div id="cropPreviewContainer"
               style="position: relative; max-width: 100%; border: 1px solid #333; overflow: hidden;">
               <img id="cropImage" src="" style="width: 100%; display: block;" />
