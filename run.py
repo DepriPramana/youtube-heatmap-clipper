@@ -592,22 +592,38 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
             print("  Detecting active speaker...")
             try:
                 from speaker_detector import ActiveSpeakerDetector
+                import cv2
                 
                 detector = ActiveSpeakerDetector()
                 speaker_pos = detector.get_primary_speaker_position(temp_file, sample_frames=20)
                 
                 if speaker_pos and out_w and out_h:
-                    # Crop to speaker's face position
-                    cx, cy = speaker_pos
+                    # Get original video dimensions
+                    cap = cv2.VideoCapture(temp_file)
+                    orig_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    orig_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    cap.release()
                     
-                    # Calculate crop coordinates (center on face)
-                    # First scale to target height, then crop to target width centered on face
-                    print(f" Face detected at ({cx}, {cy}), cropping to speaker...")
+                    cx, cy = speaker_pos
+                    print(f"  Face detected at ({cx}, {cy}) in {orig_w}x{orig_h} video")
+                    
+                    # Calculate scaling factor (we scale to match output height)
+                    scale_factor = out_h / orig_h
+                    
+                    # Calculate new face position after scaling
+                    new_cx = int(cx * scale_factor)
+                    scaled_w = int(orig_w * scale_factor)
+                    
+                    # Calculate crop X position (center crop on face)
+                    crop_x = max(0, min(new_cx - out_w // 2, scaled_w - out_w))
+                    
+                    print(f"  After scaling: face at ({new_cx}, -), scaling to {scaled_w}x{out_h}")
+                    print(f"  Cropping {out_w}x{out_h} at x={crop_x} to center on speaker")
                     
                     # Build smart crop filter
-                    # 1. Scale to output height
-                    # 2. Crop to output width, centered on face x-position
-                    vf = f"scale=-2:{out_h},crop={out_w}:{out_h}:if(gte(iw\\,{out_w})\\,min(max({cx}-{out_w}/2\\,0)\\,iw-{out_w})\\,0):0"
+                    # 1. Scale to output height (width auto-calculated to maintain aspect ratio)
+                    # 2. Crop to output width at calculated X position
+                    vf = f"scale=-2:{out_h},crop={out_w}:{out_h}:{crop_x}:0"
                     vf = apply_wm_simple(vf)
                     
                     cmd_crop = [
