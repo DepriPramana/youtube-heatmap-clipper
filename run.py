@@ -249,6 +249,23 @@ def cek_dependensi(install_whisper=False, fatal=True):
     return True
 
 
+def build_cover_scale_crop_vf(target_w, target_h):
+    """
+    Build FFmpeg video filter for cover-style scaling and center cropping.
+    Similar to CSS background-size: cover
+    
+    Args:
+        target_w: Target output width
+        target_h: Target output height
+        
+    Returns:
+        FFmpeg video filter string
+    """
+    # Scale to cover target dimensions (maintain aspect ratio, scale to fill)
+    # Then crop from center to exact target size
+    return f"scale='if(gte(iw/ih,{target_w}/{target_h}),{target_w},-2)':'if(gte(iw/ih,{target_w}/{target_h}),-2,{target_h})',crop={target_w}:{target_h}"
+
+
 def ambil_most_replayed(video_id):
     """
     Fetch and parse YouTube 'Most Replayed' heatmap data.
