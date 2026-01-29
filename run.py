@@ -761,16 +761,19 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     
                     cap.release()
                     
-                    # If we found 2 faces in majority of frames, use face-based crop
-                    if len(faces_found) >= sample_count // 2:
+                    print(f"  Found 2 faces in {len(faces_found)}/{sample_count} frames")
+                    
+                    # If we found 2 faces in at least 1/3 of frames, use face-based crop
+                    # Lowered threshold to be more lenient
+                    if len(faces_found) >= max(1, sample_count // 3):
                         # Average the face positions
                         left_x = int(sum(f[0][0] for f in faces_found) / len(faces_found))
                         left_y = int(sum(f[0][1] for f in faces_found) / len(faces_found))
                         right_x = int(sum(f[1][0] for f in faces_found) / len(faces_found))
                         right_y = int(sum(f[1][1] for f in faces_found) / len(faces_found))
                         
-                        print(f"  2 faces detected at ({left_x},{left_y}), ({right_x},{right_y})")
-                        print(f"  Using single frame to include both speakers")
+                        print(f"  ✓ 2 faces detected at ({left_x},{left_y}), ({right_x},{right_y})")
+                        print(f"  ✓ Using SINGLE FULL FRAME to include both speakers (NO split!)")
                         
                         # Calculate bounding box that includes BOTH speakers
                         # Add generous margins (40% of distance between speakers)
