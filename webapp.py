@@ -334,16 +334,26 @@ def preview_frame():
         # and then ffmpeg to grab a frame from the middle duration
         
         # 1. Get video info (direct URL and duration)
+        # Force select a clear format (up to 720p mp4) to ensure we get a direct URL
         cmd_info = [
-            "yt-dlp", "--dump-json", "--skip-download", url
+            "yt-dlp", "--dump-json", "--skip-download", 
+            "-f", "best[height<=720][ext=mp4]/best[ext=mp4]/best",
+            url
         ]
         info_json = subprocess.check_output(cmd_info).decode()
         info = json.loads(info_json)
         
         video_url = info.get("url")
+        if not video_url:
+             # Fallback: check requested_formats if it's a split stream
+             if "requested_formats" in info:
+                 # Use the first stream (usually video)
+                 video_url = info["requested_formats"][0].get("url")
+        
         duration = info.get("duration", 60)
         
         if not video_url:
+            print(f"[ERROR] No video URL found in info. Keys: {info.keys()}")
             raise Exception("Could not get video URL")
             
         # 2. Extract frame from 20% timestamp (to avoid intros)
