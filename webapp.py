@@ -393,17 +393,24 @@ def preview_frame():
         start_dl = timestamp
         end_dl = timestamp + 3 # Download 3 seconds
         
+        # Use simpler format and options to avoid ffmpeg errors
         cmd_dl_snippet = [
             "yt-dlp", "--force-ipv4", "--quiet", "--no-warnings",
             "--download-sections", f"*{start_dl}-{end_dl}",
-            "-f", "best[height<=720][ext=mp4]/best[ext=mp4]/best",
-             "--force-keyframes-at-cuts",
+            # Use broader format selector similar to run.py but capped at 720p
+            "-f", "bv*[height<=720]+ba/b[height<=720]/best[height<=720]/best",
+            # Removed --force-keyframes-at-cuts to reduce re-encoding issues
             "-o", temp_snippet,
             url
         ]
         
         print(f"[PREVIEW] Downloading snippet: {start_dl}s - {end_dl}s")
-        subprocess.check_call(cmd_dl_snippet)
+        # Capture output for debugging
+        try:
+            subprocess.check_output(cmd_dl_snippet, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            print(f"[ERROR] Snippet download failed: {e.output.decode()}")
+            raise Exception(f"Snippet download failed: {e.output.decode()}")
         
         if not os.path.exists(temp_snippet):
              raise Exception("Failed to download video snippet")
