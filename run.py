@@ -841,6 +841,10 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                         "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                         "-i", temp_file,
                         "-vf", vf,
+                        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                        "-c:a", "aac", "-b:a", "128k",
+                        cropped_file
+                    ]
         elif crop_mode == "dual_speakers":
             # Dual Speakers Mode: Split left/right, zoom to each speaker, stack top/bottom
             # 1. Crop left 60% (focused on left speaker)
