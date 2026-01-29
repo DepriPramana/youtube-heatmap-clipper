@@ -80,7 +80,7 @@ def parse_args():
     parser.add_argument("--url", help="YouTube URL (watch/shorts/youtu.be)")
     parser.add_argument(
         "--crop",
-        choices=["default", "split_left", "split_right", "split_top", "split_bottom", "smart_speaker"],
+        choices=["default", "split_left", "split_right", "split_top", "split_bottom", "dual_speakers", "smart_speaker"],
         help="Crop mode",
     )
     parser.add_argument(
@@ -706,6 +706,56 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                     "-i", temp_file,
                     "-vf", vf,
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-c:a", "aac", "-b:a", "128k",
+                    cropped_file
+                ]
+        elif crop_mode == "dual_speakers":
+            # Dual Speakers Mode: Stack two speakers vertically
+            # Crop left half (speaker 1) to top, crop right half (speaker 2) to bottom
+            if OUTPUT_RATIO == "original":
+                print("  [WARN] dual_speakers tidak support original ratio, fallback ke default.")
+                vf = apply_wm_simple(None)
+                cmd_crop = [
+                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                    "-i", temp_file,
+                    *([] if not vf else ["-vf", vf]),
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-c:a", "aac", "-b:a", "128k",
+                    cropped_file
+                ]
+            else:
+                # Each speaker gets half the output height
+                half_h = out_h // 2
+                
+                # Build filter:
+                # 1. Scale to output height (maintain aspect)
+                # 2. Split stream into 2
+                # 3. Crop left half for speaker 1
+                # 4. Crop right half for speaker 2
+                # 5. Stack vertically
+                
+                wm = get_watermark_filter(watermark_text, watermark_pos)
+                
+                # Scale first, then split and crop
+                fc = (
+                    f"[0:v]scale=-2:{out_h}[scaled];"
+                    f"[scaled]split=2[s1][s2];"
+                    f"[s1]crop=iw/2:{half_h}:0:(ih-{half_h})/2[top];"
+                    f"[s2]crop=iw/2:{half_h}:iw/2:(ih-{half_h})/2[bottom];"
+                    f"[top][bottom]vstack[stacked]"
+                )
+                
+                if wm:
+                    fc += f";[stacked]{wm}[out]"
+                else:
+                    fc = fc.replace("[stacked]", "[out]")
+                
+                cmd_crop = [
+                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                    "-i", temp_file,
+                    "-filter_complex", fc,
+                    "-map", "[out]", "-map", "0:a?",
                     "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
                     "-c:a", "aac", "-b:a", "128k",
                     cropped_file
