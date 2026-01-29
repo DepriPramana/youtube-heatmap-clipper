@@ -765,35 +765,41 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     if len(faces_found) >= sample_count // 2:
                         # Average the face positions
                         left_x = int(sum(f[0][0] for f in faces_found) / len(faces_found))
+                        left_y = int(sum(f[0][1] for f in faces_found) / len(faces_found))
                         right_x = int(sum(f[1][0] for f in faces_found) / len(faces_found))
+                        right_y = int(sum(f[1][1] for f in faces_found) / len(faces_found))
                         
-                        print(f"  2 faces detected at x={left_x}, x={right_x}")
+                        print(f"  2 faces detected at ({left_x},{left_y}), ({right_x},{right_y})")
+                        print(f"  Using single frame to include both speakers")
                         
-                        # Build face-based crop with generous margins
-                        # Each face gets 60% of width centered on face
-                        crop_w = int(orig_w * 0.6)
-                        left_crop_x = max(0, left_x - crop_w // 2)
-                        right_crop_x = max(0, right_x - crop_w // 2)
+                        # Calculate bounding box that includes BOTH speakers
+                        # Add generous margins (40% of distance between speakers)
+                        center_x = (left_x + right_x) // 2
+                        center_y = (left_y + right_y) // 2
+                        
+                        # Distance between speakers
+                        speaker_distance = abs(right_x - left_x)
+                        
+                        # Crop width should include both speakers with margin
+                        # Use aspect ratio 9:16 for vertical video
+                        crop_h = orig_h
+                        crop_w = int(crop_h * (out_w / out_h))  # Maintain 9:16 aspect
+                        
+                        # Center crop on the midpoint between speakers
+                        crop_x = max(0, min(center_x - crop_w // 2, orig_w - crop_w))
+                        crop_y = max(0, min(center_y - crop_h // 2, orig_h - crop_h))
                         
                         wm = get_watermark_filter(watermark_text, watermark_pos)
                         
-                        fc = (
-                            f"[0:v]split=2[left_src][right_src];"
-                            f"[left_src]crop={crop_w}:{orig_h}:{left_crop_x}:0,scale={half_w}:{half_h},setsar=1[top];"
-                            f"[right_src]crop={crop_w}:{orig_h}:{right_crop_x}:0,scale={half_w}:{half_h},setsar=1[bottom];"
-                            f"[top][bottom]vstack[stacked]"
-                        )
-                        
+                        # Single frame crop that includes both speakers
+                        vf = f"crop={crop_w}:{crop_h}:{crop_x}:{crop_y},scale={out_w}:{out_h},setsar=1"
                         if wm:
-                            fc += f";[stacked]{wm}[out]"
-                        else:
-                            fc = fc.replace("[stacked]", "[out]")
+                            vf += f",{wm}"
                         
                         cmd_crop = [
                             "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                             "-i", temp_file,
-                            "-filter_complex", fc,
-                            "-map", "[out]", "-map", "0:a?",
+                            "-vf", vf,
                             "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
                             "-c:a", "aac", "-b:a", "128k",
                             cropped_file
