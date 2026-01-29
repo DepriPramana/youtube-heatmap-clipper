@@ -743,9 +743,12 @@ function initCustomCrop() {
     startX = e.clientX - rect.left;
     startY = e.clientY - rect.top;
 
+    // STRICT DOM CHECK
+    const isDual = $("cropDualToggle") && $("cropDualToggle").checked;
+
     // Determine which selection box to move
     let activeSel = selection;
-    if (isDualCropMode) {
+    if (isDual) {
       const target = document.querySelector('input[name="dualCropTarget"]:checked').value;
       if (target === "2") activeSel = $("cropSelection2");
     }
@@ -806,14 +809,12 @@ function initCustomCrop() {
     if (!isDragging) return;
     isDragging = false;
 
-    const rect = container.getBoundingClientRect();
-    // Calculate normalized coordinates (0..1) based on displayed image size
-    // Note: The displayed image might be scaled, but we want relative coords to original
-    // Actually, easiest is to send relative (0.0-1.0) coords to backend
+    // STRICT DOM CHECK
+    const isDual = $("cropDualToggle") && $("cropDualToggle").checked;
 
     // Target correct box
     let activeSel = selection;
-    if (isDualCropMode) {
+    if (isDual) {
       const target = document.querySelector('input[name="dualCropTarget"]:checked').value;
       if (target === "2") activeSel = $("cropSelection2");
     }
@@ -826,12 +827,13 @@ function initCustomCrop() {
 
     if (selW < 10 || selH < 10) {
       activeSel.style.display = "none";
-      if (!isDualCropMode || activeSel === selection) currentCustomCrop = null;
-      if (isDualCropMode && activeSel === $("cropSelection2")) currentCustomCrop2 = null;
+      if (!isDual || activeSel === selection) currentCustomCrop = null;
+      if (isDual && activeSel === $("cropSelection2")) currentCustomCrop2 = null;
       return;
     }
 
     // Use image client dimensions (displayed size)
+    const img = $("cropImage"); // Ensure img is defined in scope or use global var if valid
     const imgW = img.clientWidth;
     const imgH = img.clientHeight;
 
@@ -843,7 +845,7 @@ function initCustomCrop() {
         h: selH / imgH
       };
 
-      if (isDualCropMode) {
+      if (isDual) {
         const target = document.querySelector('input[name="dualCropTarget"]:checked').value;
         if (target === "1") {
           currentCustomCrop = cropData;
@@ -885,7 +887,11 @@ function initCustomCrop() {
     // Target active box
     let activeSel = selection;
     let targetId = "1";
-    if (isDualCropMode) {
+
+    // STRICT DOM CHECK
+    const isDual = $("cropDualToggle") && $("cropDualToggle").checked;
+
+    if (isDual) {
       targetId = document.querySelector('input[name="dualCropTarget"]:checked').value;
       if (targetId === "2") activeSel = $("cropSelection2");
     }
@@ -911,7 +917,7 @@ function initCustomCrop() {
     if (imgW > 0 && imgH > 0 && w > 0 && h > 0) {
       const cropData = { x: x / imgW, y: y / imgH, w: w / imgW, h: h / imgH };
 
-      if (isDualCropMode) {
+      if (isDual) {
         if (targetId === "1") currentCustomCrop = cropData;
         else currentCustomCrop2 = cropData;
       } else {
