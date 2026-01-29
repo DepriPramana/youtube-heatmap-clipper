@@ -991,8 +991,8 @@ if ($("cropRatioLock")) $("cropRatioLock").addEventListener("change", snapRatio)
 if ($("cropDualToggle")) $("cropDualToggle").addEventListener("change", snapRatio);
 
 // Auto-Create Box on Radio Selection
-const dualRadios = document.getElementsByName("dualCropTarget");
-dualRadios.forEach(radio => {
+// Auto-Create Box on Radio Selection
+document.getElementsByName("dualCropTarget").forEach(radio => {
   radio.addEventListener("change", (e) => {
     const val = e.target.value; // "1" or "2"
     const isDual = $("cropDualToggle").checked;
@@ -1036,6 +1036,8 @@ dualRadios.forEach(radio => {
     }
   });
 });
+
+toggleCropMode(); // Ensure UI state matches dropdown on load
 
 function toggleFont() {
   const isCustom = $("subtitle_font_select").value === "custom";
