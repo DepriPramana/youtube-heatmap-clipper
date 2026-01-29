@@ -722,6 +722,129 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     "-c:a", "aac", "-b:a", "128k",
                     cropped_file
                 ]
+        elif crop_mode == "smart_speaker":
+            # Smart Speaker Mode: Intelligent single speaker detection
+            # Detects the most prominent speaker and crops full frame to them
+            # Falls back to default center crop if detection fails
+            
+            if OUTPUT_RATIO == "original":
+                print("  [WARN] smart_speaker tidak support original ratio, fallback ke default.")
+                vf = apply_wm_simple(None)
+                cmd_crop = [
+                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                    "-i", temp_file,
+                    *([] if not vf else ["-vf", vf]),
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-c:a", "aac", "-b:a", "128k",
+                    cropped_file
+                ]
+            else:
+                # Try to detect primary speaker
+                print("  Detecting primary speaker...")
+                try:
+                    from face_detector import FaceDetector
+                    import cv2
+                    
+                    # Sample video to detect faces
+                    cap = cv2.VideoCapture(temp_file)
+                    orig_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    orig_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    cap.release()
+                    
+                    # Use face detection with lower confidence for better coverage
+                    detector = FaceDetector(min_detection_confidence=0.2)
+                    
+                    # Increase sample count for better accuracy with 2 speakers
+                    sample_count = min(60, total_frames)  # 60 samples for better coverage
+                    face_detections = []
+                    
+                    for i in range(sample_count):
+                        frame_idx = int((i + 1) * total_frames / (sample_count + 1))
+                        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                        ret, frame = cap.read()
+                        if ret:
+                            faces = detector.detect_faces(frame)
+                            if faces:
+                                # Get largest face (most prominent speaker)
+                                largest = max(faces, key=lambda f: f['bbox'][2] * f['bbox'][3])
+                                face_detections.append(largest)
+                    
+                    cap.release()
+                    
+                    print(f"  Found face in {len(face_detections)}/{sample_count} frames")
+                    
+                    if len(face_detections) >= 10:  # Higher threshold for 2-speaker scenarios
+                        # Check position stability (detect if speaker changes frequently)
+                        positions_x = [f['center'][0] for f in face_detections]
+                        variance_x = sum((x - sum(positions_x)/len(positions_x))**2 for x in positions_x) / len(positions_x)
+                        
+                        # If variance too high, might be switching between 2 speakers
+                        if variance_x > (orig_w * 0.15) ** 2:  # 15% of width variance
+                            print(f"  ⚠️ High position variance detected ({variance_x:.0f}) - unstable speaker position")
+                            print(f"  This might be 2 speakers alternating. Consider using dual_speakers mode instead.")
+                        
+                        # Average the face positions
+                        cx = int(sum(f['center'][0] for f in face_detections) / len(face_detections))
+                        cy = int(sum(f['center'][1] for f in face_detections) / len(face_detections))
+                        
+                        # Get average bbox for margin calculation
+                        avg_w = int(sum(f['bbox'][2] for f in face_detections) / len(face_detections))
+                        avg_h = int(sum(f['bbox'][3] for f in face_detections) / len(face_detections))
+                        
+                        print(f"  ✓ Speaker detected at ({cx},{cy})")
+                        print(f"  ✓ Using SMART CROP focused on speaker")
+                        
+                        # Calculate crop dimensions maintaining aspect ratio
+                        crop_h = orig_h
+                        crop_w = int(crop_h * (out_w / out_h))
+                        
+                        # Add margins to avoid tight cropping (20% expansion)
+                        margin_factor = 1.2
+                        effective_face_w = int(avg_w * margin_factor)
+                        effective_face_h = int(avg_h * margin_factor)
+                        
+                        # Center crop on speaker with generous margins
+                        # Horizontal: centered on face
+                        crop_x = max(0, min(cx - crop_w // 2, orig_w - crop_w))
+                        
+                        # Vertical: place face in upper-middle region
+                        # Use 25% from top (less aggressive than 30%, more headroom)
+                        crop_y = max(0, min(cy - int(crop_h * 0.25), orig_h - crop_h))
+                        
+                        wm = get_watermark_filter(watermark_text, watermark_pos)
+                        
+                        # Single frame crop focused on speaker
+                        vf = f"crop={crop_w}:{crop_h}:{crop_x}:{crop_y},scale={out_w}:{out_h},setsar=1"
+                        if wm:
+                            vf += f",{wm}"
+                        
+                        cmd_crop = [
+                            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                            "-i", temp_file,
+                            "-vf", vf,
+                            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                            "-c:a", "aac", "-b:a", "128k",
+                            cropped_file
+                        ]
+                    else:
+                        raise Exception("Insufficient face detections")
+                        
+                except Exception as e:
+                    # Fallback to default center crop
+                    print(f"  Speaker detection failed: {e}")
+                    print("  Using fallback: default center crop...")
+                    
+                    vf = build_cover_scale_crop_vf(out_w, out_h)
+                    vf = apply_wm_simple(vf)
+                    cmd_crop = [
+                        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                        "-i", temp_file,
+                        "-vf", vf,
+                        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                        "-c:a", "aac", "-b:a", "128k",
+                        cropped_file
+                    ]
         elif crop_mode == "dual_speakers":
             # Dual Speakers Mode: Smart active speaker detection with fallback
             # 1. Try to detect ACTIVE speaker (who is talking)
@@ -799,9 +922,13 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                         crop_h = orig_h
                         crop_w = int(crop_h * (out_w / out_h))
                         
-                        # Center crop on speaker with some bias
+                        # Center crop on speaker
+                        # Horizontal: perfectly centered on face
                         crop_x = max(0, min(cx - crop_w // 2, orig_w - crop_w))
-                        crop_y = max(0, min(cy - int(crop_h * 0.4), orig_h - crop_h))  # Speaker in upper 40%
+                        
+                        # Vertical: place face in upper-middle (30% from top)
+                        # This gives headroom above and body below
+                        crop_y = max(0, min(cy - int(crop_h * 0.3), orig_h - crop_h))
                         
                         wm = get_watermark_filter(watermark_text, watermark_pos)
                         
