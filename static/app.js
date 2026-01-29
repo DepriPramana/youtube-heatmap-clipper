@@ -501,9 +501,101 @@ function renderSegments(segments) {
       el.classList.toggle("selected");
       updateSelectedUi();
     });
+
+    // Add Crop Button logic
+    const cropBtn = document.createElement("button");
+    cropBtn.className = "btn ghost smallBtn";
+    // Check if crop already exists
+    if (s.custom_crop) cropBtn.textContent = "Crop ✓";
+    else cropBtn.textContent = "Crop";
+
+    cropBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      openSegmentCrop(s, idx);
+    };
+
+    // Find segSide to append
+    const side = el.querySelector(".segSide");
+    if (side) side.appendChild(cropBtn);
+
     root.appendChild(el);
   });
   updateSelectedUi();
+}
+
+let activeSegmentIndex = -1;
+
+function openSegmentCrop(segment, index) {
+  activeSegmentIndex = index;
+  const start = Number(segment.start || 0);
+
+  // switch to custom crop view temporarily
+  $("customCropBox").classList.remove("hide");
+
+  // Load preview at specific timestamp
+  loadPreviewFrame(start);
+
+  // If already has crop, wait for image load then apply? 
+  // For now, loadPreviewFrame resets selection. 
+  // Ideally we should visualize existing selection.
+}
+
+// Update loadPreviewFrame to accept timestamp
+async function loadPreviewFrame(timestamp = null) {
+  const url = $("url").value.trim();
+  if (!url) return alert("URL required");
+
+  const btn = $("btnLoadPreview");
+  btn.disabled = true;
+  btn.textContent = "Loading...";
+
+  try {
+    const payload = { url };
+    if (timestamp !== null) payload.timestamp = timestamp;
+
+    const data = await postJson("/api/preview-frame", payload);
+    if (data.url) {
+      const img = $("cropImage");
+      img.onload = () => {
+        // Reset or Restore selection
+        if (activeSegmentIndex >= 0 && lastScanSegments[activeSegmentIndex].custom_crop) {
+          const c = lastScanSegments[activeSegmentIndex].custom_crop;
+          showCropSelection(c);
+          currentCustomCrop = c; // Set global current to this
+        } else {
+          $("cropSelection").style.display = "none";
+          currentCustomCrop = null;
+        }
+      };
+      img.src = data.url;
+    }
+  } catch (e) {
+    alert("Error loading preview: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Load Preview Image";
+  }
+}
+
+function showCropSelection(c) {
+  const img = $("cropImage");
+  const sel = $("cropSelection");
+  if (!img.clientWidth || !img.clientHeight) return;
+
+  sel.style.display = 'block';
+  sel.style.left = (c.x * img.clientWidth) + 'px';
+  sel.style.top = (c.y * img.clientHeight) + 'px';
+  sel.style.width = (c.w * img.clientWidth) + 'px';
+  sel.style.height = (c.h * img.clientHeight) + 'px';
+}
+
+// Hook into mouseup to save to segment if active
+function saveSegmentCrop() {
+  if (activeSegmentIndex >= 0 && currentCustomCrop) {
+    lastScanSegments[activeSegmentIndex].custom_crop = currentCustomCrop;
+    console.log(`Saved crop for segment #${activeSegmentIndex + 1}`, currentCustomCrop);
+    renderSegments(lastScanSegments); // Re-render to show checkmark
+  }
 }
 
 
@@ -605,29 +697,14 @@ function toggleCropMode() {
   $("customCropBox").classList.toggle("hide", !isCustom);
 }
 
-async function loadPreviewFrame() {
-  const url = $("url").value.trim();
-  if (!url) return alert("URL required");
-  $("btnLoadPreview").disabled = true;
-  $("btnLoadPreview").textContent = "Loading...";
-  try {
-    const data = await postJson("/api/preview-frame", { url });
-    if (data.url) {
-      const img = $("cropImage");
-      img.onload = () => {
-        // Reset selection
-        $("cropSelection").style.display = "none";
-        currentCustomCrop = null;
-      };
-      img.src = data.url;
-    }
-  } catch (e) {
-    alert("Error loading preview: " + e.message);
-  } finally {
-    $("btnLoadPreview").disabled = false;
-    $("btnLoadPreview").textContent = "Load Preview Image";
-  }
-}
+// Modified loadPreviewFrame is defined above, replacing the old one
+// function loadPreviewFrame() { ... } 
+// We need to remove the old definition or merge. I will replace it in the first chunk if possible, 
+// but since I'm appending new functions, I should replace the existing loadPreviewFrame here.
+
+// Since I wrote a new loadPreviewFrame above, I will comment out or remove this block.
+// Wait, I can't put the new function in the middle of renderSegments.
+// I should split this into multiple replacements.
 
 function initCustomCrop() {
   const container = $("cropPreviewContainer");
@@ -701,6 +778,11 @@ function initCustomCrop() {
         h: selH / imgH
       };
       console.log("Custom Crop:", currentCustomCrop);
+
+      // Auto-save if in segment mode
+      if (activeSegmentIndex >= 0) {
+        saveSegmentCrop();
+      }
     }
   });
 

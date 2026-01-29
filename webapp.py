@@ -144,11 +144,16 @@ def run_job(job_id, payload):
                     start = float(seg.get("start"))
                     dur = float(seg.get("duration"))
                     score = float(seg.get("score", 1.0))
+                    item_custom_crop = seg.get("custom_crop") # Extract custom crop if exists
                 except Exception:
                     continue
                 if dur <= 0:
                     continue
-                targets.append({"start": start, "duration": dur, "score": score})
+                
+                target_item = {"start": start, "duration": dur, "score": score}
+                if item_custom_crop:
+                    target_item["custom_crop"] = item_custom_crop
+                targets.append(target_item)
             if not targets:
                 raise ValueError("Segment pilihan invalid")
         elif mode == "custom":
@@ -181,10 +186,20 @@ def run_job(job_id, payload):
         success = 0
         for idx, item in enumerate(targets, start=1):
             set_job(job_id, current=idx, status_text=f"clip {idx}/{len(targets)}")
+            
+            # Determine crop mode for this specific clip
+            this_crop_mode = crop
+            this_custom_crop = custom_crop  # global setting
+
+            # If segment has specific custom_crop, use it
+            if item.get("custom_crop"):
+                this_crop_mode = "custom_manual"
+                this_custom_crop = item.get("custom_crop")
+                
             ok = core.proses_satu_clip(
-                video_id, item, idx, total_duration, crop, subtitle, 
+                video_id, item, idx, total_duration, this_crop_mode, subtitle, 
                 watermark_text=watermark_text, watermark_pos=watermark_pos, 
-                custom_crop=custom_crop,
+                custom_crop=this_custom_crop,
                 event_hook=event_hook
             )
             if ok:
@@ -356,8 +371,22 @@ def preview_frame():
             print(f"[ERROR] No video URL found in info. Keys: {info.keys()}")
             raise Exception("Could not get video URL")
             
-        # 2. Extract frame from 20% timestamp (to avoid intros)
-        timestamp = int(duration * 0.2)
+        # 2. Extract frame from specific timestamp or 20% default
+        ts_req = data.get("timestamp")
+        if ts_req is not None:
+            try:
+                timestamp = int(float(ts_req))
+                # Ensure timestamp is within duration
+                timestamp = max(0, min(timestamp, int(duration - 1)))
+                preview_filename = f"preview_{url_hash}_t{timestamp}.jpg"
+                preview_path = os.path.join(preview_dir, preview_filename)
+                
+                if os.path.exists(preview_path):
+                     return jsonify({"ok": True, "url": f"/static/previews/{preview_filename}"})
+            except:
+                timestamp = int(duration * 0.2)
+        else:
+            timestamp = int(duration * 0.2)
         
         cmd_ffmpeg = [
             "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
