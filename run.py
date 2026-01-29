@@ -743,11 +743,12 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     orig_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                     
-                    detector = FaceDetector(min_detection_confidence=0.3)
+                    # Lower confidence for better detection
+                    detector = FaceDetector(min_detection_confidence=0.2)
                     faces_found = []
                     
-                    # Sample 10 frames
-                    sample_count = min(10, total_frames)
+                    # Increase sample count for better coverage
+                    sample_count = min(20, total_frames)
                     for i in range(sample_count):
                         frame_idx = int((i + 1) * total_frames / (sample_count + 1))
                         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
