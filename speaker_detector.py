@@ -138,7 +138,7 @@ class ActiveSpeakerDetector:
     def get_primary_speaker_position(
         self, 
         video_path: str, 
-        sample_frames: int = 30
+        sample_frames: int = 60
     ) -> Optional[Tuple[int, int]]:
         """
         Quick analysis: Get the most common face position (simplified approach)
@@ -146,10 +146,10 @@ class ActiveSpeakerDetector:
         
         Args:
             video_path: Path to video file
-            sample_frames: Number of frames to sample throughout video
+            sample_frames: Number of frames to sample throughout video (default 60)
             
         Returns:
-            (x, y) center position of primary speaker, or None
+            (x, y) center position of primary speaker, or None if unstable/no face
         """
         cap = cv2.VideoCapture(video_path)
         
@@ -183,10 +183,46 @@ class ActiveSpeakerDetector:
         if not face_positions:
             return None
         
-        # Return median position (more robust than mean)
+        # Check if face detection is stable (low variance)
+        # If speaker moves a lot, variance will be high -> fallback to center crop
         positions_array = np.array(face_positions)
+        
+        # Calculate variance
+        var_x = np.var(positions_array[:, 0])
+        var_y = np.var(positions_array[:, 1])
+        
+        # Get video dimensions for relative variance
+        sample_frame_idx = frame_indices[0]
+        cap = cv2.VideoCapture(video_path)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, sample_frame_idx)
+        ret, frame = cap.read()
+        cap.release()
+        
+        if ret:
+            frame_h, frame_w = frame.shape[:2]
+            # Calculate relative variance (as % of frame size)
+            rel_var_x = var_x / (frame_w ** 2) * 100
+            rel_var_y = var_y / (frame_h ** 2) * 100
+            
+            # If variance is too high (speaker moves around a lot), return None
+            # Threshold: 2% variance means face position varies by ~14% of frame width
+            if rel_var_x > 2.0 or rel_var_y > 2.0:
+                print(f"  ⚠️  High variance detected (x: {rel_var_x:.2f}%, y: {rel_var_y:.2f}%)")
+                print(f"  Speaker position is unstable, using center crop instead")
+                return None
+        
+        # Check detection consistency - need at least 60% of frames with face
+        detection_rate = len(face_positions) / len(frame_indices)
+        if detection_rate < 0.6:
+            print(f"  ⚠️  Low detection rate: {detection_rate*100:.0f}%")
+            print(f"  Face not consistently detected, using center crop instead")
+            return None
+        
+        # Return median position (more robust than mean)
         median_x = int(np.median(positions_array[:, 0]))
         median_y = int(np.median(positions_array[:, 1]))
+        
+        print(f"  ✓ Stable face position detected ({detection_rate*100:.0f}% detection rate)")
         
         return (median_x, median_y)
 

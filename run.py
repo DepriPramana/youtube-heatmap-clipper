@@ -595,7 +595,7 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                 import cv2
                 
                 detector = ActiveSpeakerDetector()
-                speaker_pos = detector.get_primary_speaker_position(temp_file, sample_frames=20)
+                speaker_pos = detector.get_primary_speaker_position(temp_file, sample_frames=60)
                 
                 if speaker_pos and out_w and out_h:
                     # Get original video dimensions
