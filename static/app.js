@@ -511,10 +511,6 @@ let lastScanSegments = [];
 let lastPreviewUrl = "";
 let currentPreview = null;
 let currentVideoId = "";
-let lastScanSegments = [];
-let lastPreviewUrl = "";
-let currentPreview = null;
-let currentVideoId = "";
 let selectedKeys = new Set();
 let currentCustomCrop = null;
 
