@@ -723,10 +723,10 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     cropped_file
                 ]
         elif crop_mode == "dual_speakers":
-            # Dual Speakers Mode: Smart detection with fallback
-            # 1. Try to detect 2 faces
-            # 2. If 2 faces found: crop each face individually
-            # 3. If not: fallback to left/right position-based crop
+            # Dual Speakers Mode: Smart active speaker detection with fallback
+            # 1. Try to detect ACTIVE speaker (who is talking)
+            # 2. If active speaker detected: crop full frame to that speaker only
+            # 3. If detection fails: fallback to split top/bottom mode
             
             if OUTPUT_RATIO == "original":
                 print("  [WARN] dual_speakers tidak support original ratio, fallback ke default.")
@@ -743,71 +743,49 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                 half_h = out_h // 2
                 half_w = out_w
                 
-                # Try face detection first
-                print("  Detecting multiple speakers...")
+                # Try active speaker detection first
+                print("  Detecting active speaker...")
                 try:
-                    from face_detector import FaceDetector
+                    from speaker_detector import ActiveSpeakerDetector
                     import cv2
                     
-                    # Sample video to detect faces
+                    # Sample video to detect active speaker
                     cap = cv2.VideoCapture(temp_file)
                     orig_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                     orig_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    
-                    # Lower confidence for better detection
-                    detector = FaceDetector(min_detection_confidence=0.2)
-                    faces_found = []
-                    
-                    # Increase sample count for better coverage
-                    sample_count = min(20, total_frames)
-                    for i in range(sample_count):
-                        frame_idx = int((i + 1) * total_frames / (sample_count + 1))
-                        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-                        ret, frame = cap.read()
-                        if ret:
-                            results = detector.detect_faces(frame)
-                            if results and len(results) >= 2:
-                                # Sort by x position (left to right)
-                                sorted_faces = sorted(results, key=lambda f: f['center'][0])
-                                faces_found.append((sorted_faces[0]['center'], sorted_faces[1]['center']))
-                    
+                    fps = cap.get(cv2.CAP_PROP_FPS) or 30
                     cap.release()
                     
-                    print(f"  Found 2 faces in {len(faces_found)}/{sample_count} frames")
+                    # Use active speaker detection
+                    detector = ActiveSpeakerDetector()
+                    speaker_info = detector.detect_active_speaker(
+                        temp_file,
+                        sample_frames=60,
+                        confidence_threshold=0.3
+                    )
                     
-                    # If we found 2 faces in at least 1/3 of frames, use face-based crop
-                    # Lowered threshold to be more lenient
-                    if len(faces_found) >= max(1, sample_count // 3):
-                        # Average the face positions
-                        left_x = int(sum(f[0][0] for f in faces_found) / len(faces_found))
-                        left_y = int(sum(f[0][1] for f in faces_found) / len(faces_found))
-                        right_x = int(sum(f[1][0] for f in faces_found) / len(faces_found))
-                        right_y = int(sum(f[1][1] for f in faces_found) / len(faces_found))
+                    if speaker_info and 'center' in speaker_info and 'bbox' in speaker_info:
+                        cx, cy = speaker_info['center']
+                        bbox = speaker_info['bbox']
                         
-                        print(f"  ✓ 2 faces detected at ({left_x},{left_y}), ({right_x},{right_y})")
-                        print(f"  ✓ Using SINGLE FULL FRAME to include both speakers (NO split!)")
+                        print(f"  ✓ Active speaker detected at ({cx},{cy})")
+                        print(f"  ✓ Using FULL FRAME crop to active speaker (NO split!)")
                         
-                        # Calculate bounding box that includes BOTH speakers
-                        # Add generous margins (40% of distance between speakers)
-                        center_x = (left_x + right_x) // 2
-                        center_y = (left_y + right_y) // 2
+                        # Expand bounding box with margin
+                        margin_x = int(bbox[2] * 0.4)  # 40% width margin
+                        margin_y = int(bbox[3] * 0.6)  # 60% height margin (more on top for head)
                         
-                        # Distance between speakers
-                        speaker_distance = abs(right_x - left_x)
-                        
-                        # Crop width should include both speakers with margin
-                        # Use aspect ratio 9:16 for vertical video
+                        # Calculate crop dimensions maintaining 9:16 aspect
                         crop_h = orig_h
-                        crop_w = int(crop_h * (out_w / out_h))  # Maintain 9:16 aspect
+                        crop_w = int(crop_h * (out_w / out_h))
                         
-                        # Center crop on the midpoint between speakers
-                        crop_x = max(0, min(center_x - crop_w // 2, orig_w - crop_w))
-                        crop_y = max(0, min(center_y - crop_h // 2, orig_h - crop_h))
+                        # Center crop on speaker with some bias
+                        crop_x = max(0, min(cx - crop_w // 2, orig_w - crop_w))
+                        crop_y = max(0, min(cy - int(crop_h * 0.4), orig_h - crop_h))  # Speaker in upper 40%
                         
                         wm = get_watermark_filter(watermark_text, watermark_pos)
                         
-                        # Single frame crop that includes both speakers
+                        # Single frame crop focused on active speaker
                         vf = f"crop={crop_w}:{crop_h}:{crop_x}:{crop_y},scale={out_w}:{out_h},setsar=1"
                         if wm:
                             vf += f",{wm}"
@@ -821,17 +799,16 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                             cropped_file
                         ]
                     else:
-                        raise Exception("Less than 2 faces detected, using position-based crop")
+                        raise Exception("Active speaker not detected")
                         
                 except Exception as e:
-                    # Fallback to position-based crop
-                    print(f"  Face detection failed or insufficient faces: {e}")
-                    print("  Using position-based left/right crop (strict split)...")
+                    # Fallback to split mode
+                    print(f"  Active speaker detection failed: {e}")
+                    print("  Using fallback: split top/bottom mode...")
                     
                     wm = get_watermark_filter(watermark_text, watermark_pos)
                     
-                    # Use strict 50/50 split without overlap
-                    # This ensures we get different parts of the frame
+                    # Use strict 50/50 split - top and bottom halves stacked vertically
                     fc = (
                         f"[0:v]split=2[left_src][right_src];"
                         # Left speaker (top): crop strict left 50%
