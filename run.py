@@ -730,21 +730,22 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                 half_w = out_w
                 
                 # Build filter:
-                # 1. Split input into 2 streams
-                # 2. Crop left half and scale to 720x640
-                # 3. Crop right half and scale to 720x640
-                # 4. Stack vertically to get 720x1280
+                # For videos with centered speakers, we need overlapping crops
+                # focused on left and right areas
+                # Left: crop 65% from position 0 (captures left speaker)
+                # Right: crop 65% from position 35% (captures right speaker)
                 
                 wm = get_watermark_filter(watermark_text, watermark_pos)
                 
-                # Process each half: crop then scale directly to target size
-                # Using setsar=1 to ensure square pixels
+                # Use overlapping crops to better capture each speaker
+                # Left speaker: crop leftmost 65% of frame
+                # Right speaker: crop rightmost 65% of frame (starting at 35%)
                 fc = (
                     f"[0:v]split=2[left_src][right_src];"
-                    # Left speaker (top): crop left half, scale to exact 720x640
-                    f"[left_src]crop=iw/2:ih:0:0,scale={half_w}:{half_h},setsar=1[top];"
-                    # Right speaker (bottom): crop right half, scale to exact 720x640
-                    f"[right_src]crop=iw/2:ih:iw/2:0,scale={half_w}:{half_h},setsar=1[bottom];"
+                    # Left speaker (top): crop leftmost 65%, scale to 720x640
+                    f"[left_src]crop=iw*0.65:ih:0:0,scale={half_w}:{half_h},setsar=1[top];"
+                    # Right speaker (bottom): crop rightmost 65%, scale to 720x640
+                    f"[right_src]crop=iw*0.65:ih:iw*0.35:0,scale={half_w}:{half_h},setsar=1[bottom];"
                     # Stack vertically
                     f"[top][bottom]vstack[stacked]"
                 )
