@@ -743,47 +743,57 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                 half_h = out_h // 2
                 half_w = out_w
                 
-                # Try active speaker detection first
-                print("  Detecting active speaker...")
+                # Try to detect largest/most prominent speaker
+                print("  Detecting primary speaker...")
                 try:
-                    from speaker_detector import ActiveSpeakerDetector
+                    from face_detector import FaceDetector
                     import cv2
                     
-                    # Sample video to detect active speaker
+                    # Sample video to detect faces
                     cap = cv2.VideoCapture(temp_file)
                     orig_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                     orig_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                    fps = cap.get(cv2.CAP_PROP_FPS) or 30
+                    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                     cap.release()
                     
-                    # Use active speaker detection
-                    detector = ActiveSpeakerDetector()
-                    # Returns list of (timestamp, face_dict) tuples
-                    speaker_results = detector.detect_active_speaker(
-                        temp_file,
-                        sample_rate=15  # Every 15 frames
-                    )
+                    # Use simple face detection
+                    detector = FaceDetector(min_detection_confidence=0.2)
                     
-                    # Filter out None results and aggregate speaker positions
-                    active_speakers = [face for ts, face in speaker_results if face is not None]
+                    # Sample frames and find largest face
+                    cap = cv2.VideoCapture(temp_file)
+                    sample_count = min(30, total_frames)
+                    face_detections = []
                     
-                    print(f"  Found {len(active_speakers)} active speaker detections out of {len(speaker_results)} frames")
+                    for i in range(sample_count):
+                        frame_idx = int((i + 1) * total_frames / (sample_count + 1))
+                        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                        ret, frame = cap.read()
+                        if ret:
+                            faces = detector.detect_faces(frame)
+                            if faces:
+                                # Get largest face
+                                largest = max(faces, key=lambda f: f['bbox'][2] * f['bbox'][3])
+                                face_detections.append(largest)
                     
-                    if len(active_speakers) >= 3:  # Lowered from 5 to 3 for more lenient detection
-                        # Average the speaker positions
-                        cx = int(sum(f['center'][0] for f in active_speakers) / len(active_speakers))
-                        cy = int(sum(f['center'][1] for f in active_speakers) / len(active_speakers))
+                    cap.release()
+                    
+                    print(f"  Found face in {len(face_detections)}/{sample_count} frames")
+                    
+                    if len(face_detections) >= 5:  # Need at least 5 frames with face
+                        # Average the face positions
+                        cx = int(sum(f['center'][0] for f in face_detections) / len(face_detections))
+                        cy = int(sum(f['center'][1] for f in face_detections) / len(face_detections))
                         
                         # Get average bbox
                         avg_bbox = [
-                            int(sum(f['bbox'][0] for f in active_speakers) / len(active_speakers)),
-                            int(sum(f['bbox'][1] for f in active_speakers) / len(active_speakers)),
-                            int(sum(f['bbox'][2] for f in active_speakers) / len(active_speakers)),
-                            int(sum(f['bbox'][3] for f in active_speakers) / len(active_speakers))
+                            int(sum(f['bbox'][0] for f in face_detections) / len(face_detections)),
+                            int(sum(f['bbox'][1] for f in face_detections) / len(face_detections)),
+                            int(sum(f['bbox'][2] for f in face_detections) / len(face_detections)),
+                            int(sum(f['bbox'][3] for f in face_detections) / len(face_detections))
                         ]
                         
-                        print(f"  ✓ Active speaker detected at ({cx},{cy}) in {len(active_speakers)}/{len(speaker_results)} frames")
-                        print(f"  ✓ Using FULL FRAME crop to active speaker (NO split!)")
+                        print(f"  ✓ Primary speaker detected at ({cx},{cy})")
+                        print(f"  ✓ Using FULL FRAME crop to speaker (NO split!)")
                         
                         # Calculate crop dimensions maintaining 9:16 aspect
                         crop_h = orig_h
