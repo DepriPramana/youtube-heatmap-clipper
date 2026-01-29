@@ -229,6 +229,16 @@ def cek_dependensi(install_whisper=False, fatal=True):
             print(f"⚠️  Model '{WHISPER_MODEL}' (~{get_model_size(WHISPER_MODEL)}) will be downloaded on first use.\n")
 
     coba_masukkan_ffmpeg_ke_path()
+    
+    ffmpeg_path = shutil.which("ffmpeg")
+    print(f"[DEBUG] Found ffmpeg at: {ffmpeg_path}")
+    if ffmpeg_path:
+        try:
+            res = subprocess.run([ffmpeg_path, "-version"], capture_output=True, text=True)
+            print(f"[DEBUG] ffmpeg version: {res.stdout.splitlines()[0] if res.stdout else 'Unknown'}")
+        except Exception as e:
+            print(f"[DEBUG] Failed to run ffmpeg -version: {e}")
+
     if not ffmpeg_tersedia():
         print("FFmpeg not found. Please install FFmpeg and ensure it is in PATH.")
         if fatal:
@@ -483,7 +493,8 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
     cmd_download = [
         sys.executable, "-m", "yt_dlp",
         "--force-ipv4",
-        "--quiet", "--no-warnings",
+        "--verbose", # DEBUG: verbose
+        # "--quiet", "--no-warnings",
         "--download-sections", f"*{start}-{end}",
         "--force-keyframes-at-cuts",
         "--merge-output-format", "mkv",
@@ -495,7 +506,8 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
     cmd_download_fallback = [
         sys.executable, "-m", "yt_dlp",
         "--force-ipv4",
-        "--quiet", "--no-warnings",
+        "--verbose", # DEBUG: verbose
+        # "--quiet", "--no-warnings",
         "--download-sections", f"*{start}-{end}",
         "--force-keyframes-at-cuts",
         "--merge-output-format", "mkv",
@@ -505,6 +517,7 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
     ]
 
     try:
+        print(f"[DEBUG] Running download command: {cmd_download}")
         try:
             # First attempt with preferred quality
             subprocess.run(
@@ -746,6 +759,8 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
 
         print(f"Failed to generate this clip.")
         print(f"Error details: {e.stderr if e.stderr else e.stdout}")
+        print(f"STDOUT: {e.stdout}")
+        print(f"STDERR: {e.stderr}")
         return False
     except Exception as e:
         # Cleanup temp files

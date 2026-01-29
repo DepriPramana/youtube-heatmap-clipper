@@ -1,0 +1,269 @@
+--- Environment Check ---
+ffmpeg path: C:\ffmpeg\bin\ffmpeg.EXE
+ffmpeg -version exit code: 0
+ffmpeg version output head: ffmpeg version N-121490-g7e8ef2ded2-20251024 Copyright (c) 2000-2025 the FFmpeg developers
+
+--- Running yt-dlp Download Test ---
+Command: ['C:\\Users\\UATDE\\miniconda3\\python.exe', '-m', 'yt_dlp', '--verbose', '--download-sections', '*10-20', '--force-keyframes-at-cuts', '--merge-output-format', 'mkv', '-f', 'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b', '-o', 'reproduce_temp.mkv', 'https://youtu.be/dQw4w9WgXcQ']
+Success!
+STDOUT:
+[youtube] Extracting URL: https://youtu.be/dQw4w9WgXcQ
+[youtube] dQw4w9WgXcQ: Downloading webpage
+[youtube] dQw4w9WgXcQ: Downloading android sdkless player API JSON
+[youtube] dQw4w9WgXcQ: Downloading web safari player API JSON
+[youtube] dQw4w9WgXcQ: Downloading m3u8 information
+[info] dQw4w9WgXcQ: Downloading 1 format(s): 399+140
+[info] dQw4w9WgXcQ: Downloading 1 time ranges: 10.0-20.0
+[download] Destination: reproduce_temp.mkv
+
+[download] 100% of    5.52MiB in 00:00:35 at 160.06KiB/s
+
+STDERR:
+[debug] Command-line config: ['--verbose', '--download-sections', '*10-20', '--force-keyframes-at-cuts', '--merge-output-format', 'mkv', '-f', 'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b', '-o', 'reproduce_temp.mkv', 'https://youtu.be/dQw4w9WgXcQ']
+[debug] Encodings: locale cp1252, fs utf-8, pref cp1252, out cp1252 (No ANSI), error cp1252 (No ANSI), screen cp1252 (No ANSI)
+[debug] yt-dlp version stable@2025.12.08 from yt-dlp/yt-dlp [7a52ff29d] (pip)
+[debug] Python 3.13.2 (CPython AMD64 64bit) - Windows-11-10.0.26100-SP0 (OpenSSL 3.0.17 1 Jul 2025)
+[debug] exe versions: ffmpeg N-121490-g7e8ef2ded2-20251024 (setts), ffprobe N-121490-g7e8ef2ded2-20251024
+[debug] Optional libraries: brotli-1.0.9, certifi-2025.07.14, requests-2.32.3, sqlite3-3.45.3, urllib3-2.3.0, websockets-15.0.1
+[debug] JS runtimes: none
+[debug] Proxy map: {'no': '*.azureedge.net'}
+[debug] Request Handlers: urllib, requests, websockets
+[debug] Plugin directories: none
+[debug] Loaded 1854 extractors
+[debug] [youtube] [pot] PO Token Providers: none
+[debug] [youtube] [pot] PO Token Cache Providers: memory
+[debug] [youtube] [pot] PO Token Cache Spec Providers: webpo
+[debug] [youtube] [jsc] JS Challenge Providers: bun (unavailable), deno (unavailable), node (unavailable), quickjs (unavailable)
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+[debug] [youtube] Forcing "main" player JS variant for player afc53320
+        original url = /s/player/afc53320/player_es6.vflset/en_US/base.js
+[debug] [youtube] dQw4w9WgXcQ: Detected a 15s ad skippable after 5s for web_safari
+WARNING: [youtube] dQw4w9WgXcQ: Some web_safari client https formats have been skipped as they are missing a url. YouTube is forcing SABR streaming for this client. See  https://github.com/yt-dlp/yt-dlp/issues/12482  for more details
+[debug] [youtube] dQw4w9WgXcQ: Detected experiment to bind GVS PO Token to video id.
+WARNING: [youtube] dQw4w9WgXcQ: Some web client https formats have been skipped as they are missing a url. YouTube is forcing SABR streaming for this client. See  https://github.com/yt-dlp/yt-dlp/issues/12482  for more details
+[debug] Sort order given by extractor: quality, res, fps, hdr:12, source, vcodec, channels, acodec, lang, proto
+[debug] Formats sorted by: hasvid, ie_pref, quality, res, fps, hdr:12(7), source, vcodec, channels, acodec, lang, proto, size, br, asr, vext, aext, hasaud, id
+[debug] Invoking ffmpeg downloader on "https://rr1---sn-pjvo2aopq-jb3s.googlevideo.com/videoplayback?expire=1769668824&ei=eKx6ae7_DO-I4t4PuqGHgQ0&ip=103.190.47.84&id=o-AM5dT0FeHthqPABIJbyc_jbSO8ejhupIi9WEKioQs_pK&itag=399&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&cps=753&met=1769647224%2C&mh=7c&mm=31%2C29&mn=sn-pjvo2aopq-jb3s%2Csn-npoeenl7&ms=au%2Crdu&mv=m&mvi=1&pl=24&rms=au%2Cau&initcwndbps=746250&bui=AW-iu_qMbedtkBLVZOIGYL9xk_Xt4U7fKr8wlfviSGOtpDvT-vkADKUN-TtljkrxXD6w8td1E-Q3VDeK&spc=q5xjPI2NhoYwUBWd2Y-z3DLQO1VhgmscaVhfiKl1gQuJk1d6HcXyhaqsDlZsX5SdS7ZUUA&vprv=1&svpuc=1&mime=video%2Fmp4&rqh=1&gir=yes&clen=30415996&dur=213.040&lmt=1766970905427393&mt=1769646837&fvip=5&keepalive=yes&fexp=51552689%2C51565116%2C51565682%2C51580968&c=ANDROID&txp=5537534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJEij0EwRgIhAJmFBhJG4nMsuWrqXDdi2O0dRjKQIk7nQNt5x4E1Wb82AiEAoQeATATK_RP2jxDiEIhYqDHD-M7ZDBsDi3MpYkVqTaI%3D&lsparams=cps%2Cmet%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRQIgUzKqYGnWrvC37BnBc_cMYPvtaIwKlwW7k6FCnM82qW8CIQCLcpWRQ0runvBFMqOdC7SsLaJlSJmpggRoiPGowuDReg%3D%3D", "https://rr1---sn-pjvo2aopq-jb3s.googlevideo.com/videoplayback?expire=1769668824&ei=eKx6ae7_DO-I4t4PuqGHgQ0&ip=103.190.47.84&id=o-AM5dT0FeHthqPABIJbyc_jbSO8ejhupIi9WEKioQs_pK&itag=140&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&cps=753&met=1769647224%2C&mh=7c&mm=31%2C29&mn=sn-pjvo2aopq-jb3s%2Csn-npoeenl7&ms=au%2Crdu&mv=m&mvi=1&pl=24&rms=au%2Cau&initcwndbps=746250&bui=AW-iu_qMbedtkBLVZOIGYL9xk_Xt4U7fKr8wlfviSGOtpDvT-vkADKUN-TtljkrxXD6w8td1E-Q3VDeK&spc=q5xjPI2NhoYwUBWd2Y-z3DLQO1VhgmscaVhfiKl1gQuJk1d6HcXyhaqsDlZsX5SdS7ZUUA&vprv=1&svpuc=1&mime=audio%2Fmp4&rqh=1&gir=yes&clen=3449447&dur=213.089&lmt=1766955925572207&mt=1769646837&fvip=5&keepalive=yes&fexp=51552689%2C51565116%2C51565682%2C51580968&c=ANDROID&txp=5532534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJEij0EwRgIhAP91aCRvfPVD_mPAg-q9oozgf4Vy8zUB74SySLnRXtHnAiEA6oBffzj2GcmvkuSVhole6UGfjkKxQEwUBoayh2nob_8%3D&lsparams=cps%2Cmet%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRQIgUzKqYGnWrvC37BnBc_cMYPvtaIwKlwW7k6FCnM82qW8CIQCLcpWRQ0runvBFMqOdC7SsLaJlSJmpggRoiPGowuDReg%3D%3D"
+[debug] ffmpeg command line: ffmpeg -y -loglevel verbose -headers "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-us,en;q=0.5
+Sec-Fetch-Mode: navigate
+" -ss 10.0 -t 10.0 -i "https://rr1---sn-pjvo2aopq-jb3s.googlevideo.com/videoplayback?expire=1769668824&ei=eKx6ae7_DO-I4t4PuqGHgQ0&ip=103.190.47.84&id=o-AM5dT0FeHthqPABIJbyc_jbSO8ejhupIi9WEKioQs_pK&itag=399&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&cps=753&met=1769647224%2C&mh=7c&mm=31%2C29&mn=sn-pjvo2aopq-jb3s%2Csn-npoeenl7&ms=au%2Crdu&mv=m&mvi=1&pl=24&rms=au%2Cau&initcwndbps=746250&bui=AW-iu_qMbedtkBLVZOIGYL9xk_Xt4U7fKr8wlfviSGOtpDvT-vkADKUN-TtljkrxXD6w8td1E-Q3VDeK&spc=q5xjPI2NhoYwUBWd2Y-z3DLQO1VhgmscaVhfiKl1gQuJk1d6HcXyhaqsDlZsX5SdS7ZUUA&vprv=1&svpuc=1&mime=video%2Fmp4&rqh=1&gir=yes&clen=30415996&dur=213.040&lmt=1766970905427393&mt=1769646837&fvip=5&keepalive=yes&fexp=51552689%2C51565116%2C51565682%2C51580968&c=ANDROID&txp=5537534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJEij0EwRgIhAJmFBhJG4nMsuWrqXDdi2O0dRjKQIk7nQNt5x4E1Wb82AiEAoQeATATK_RP2jxDiEIhYqDHD-M7ZDBsDi3MpYkVqTaI%3D&lsparams=cps%2Cmet%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRQIgUzKqYGnWrvC37BnBc_cMYPvtaIwKlwW7k6FCnM82qW8CIQCLcpWRQ0runvBFMqOdC7SsLaJlSJmpggRoiPGowuDReg%3D%3D" -headers "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-us,en;q=0.5
+Sec-Fetch-Mode: navigate
+" -ss 10.0 -t 10.0 -i "https://rr1---sn-pjvo2aopq-jb3s.googlevideo.com/videoplayback?expire=1769668824&ei=eKx6ae7_DO-I4t4PuqGHgQ0&ip=103.190.47.84&id=o-AM5dT0FeHthqPABIJbyc_jbSO8ejhupIi9WEKioQs_pK&itag=140&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&cps=753&met=1769647224%2C&mh=7c&mm=31%2C29&mn=sn-pjvo2aopq-jb3s%2Csn-npoeenl7&ms=au%2Crdu&mv=m&mvi=1&pl=24&rms=au%2Cau&initcwndbps=746250&bui=AW-iu_qMbedtkBLVZOIGYL9xk_Xt4U7fKr8wlfviSGOtpDvT-vkADKUN-TtljkrxXD6w8td1E-Q3VDeK&spc=q5xjPI2NhoYwUBWd2Y-z3DLQO1VhgmscaVhfiKl1gQuJk1d6HcXyhaqsDlZsX5SdS7ZUUA&vprv=1&svpuc=1&mime=audio%2Fmp4&rqh=1&gir=yes&clen=3449447&dur=213.089&lmt=1766955925572207&mt=1769646837&fvip=5&keepalive=yes&fexp=51552689%2C51565116%2C51565682%2C51580968&c=ANDROID&txp=5532534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJEij0EwRgIhAP91aCRvfPVD_mPAg-q9oozgf4Vy8zUB74SySLnRXtHnAiEA6oBffzj2GcmvkuSVhole6UGfjkKxQEwUBoayh2nob_8%3D&lsparams=cps%2Cmet%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRQIgUzKqYGnWrvC37BnBc_cMYPvtaIwKlwW7k6FCnM82qW8CIQCLcpWRQ0runvBFMqOdC7SsLaJlSJmpggRoiPGowuDReg%3D%3D" -map 0:0 -map 1:0 -f matroska file:reproduce_temp.mkv.part
+ffmpeg version N-121490-g7e8ef2ded2-20251024 Copyright (c) 2000-2025 the FFmpeg developers
+  built with gcc 15.2.0 (crosstool-NG 1.28.0.1_403899e)
+  configuration: --prefix=/ffbuild/prefix --pkg-config-flags=--static --pkg-config=pkg-config --cross-prefix=x86_64-w64-mingw32- --arch=x86_64 --target-os=mingw32 --enable-gpl --enable-version3 --disable-debug --enable-shared --disable-static --disable-w32threads --enable-pthreads --enable-iconv --enable-zlib --enable-libxml2 --enable-libvmaf --enable-fontconfig --enable-libharfbuzz --enable-libfreetype --enable-libfribidi --enable-vulkan --enable-libshaderc --enable-libvorbis --disable-libxcb --disable-xlib --disable-libpulse --enable-opencl --enable-gmp --enable-lzma --enable-amf --enable-libaom --enable-libaribb24 --enable-avisynth --enable-chromaprint --enable-libdav1d --enable-libdavs2 --enable-libdvdread --enable-libdvdnav --disable-libfdk-aac --enable-ffnvcodec --enable-cuda-llvm --enable-frei0r --enable-libgme --enable-libkvazaar --enable-libaribcaption --enable-libass --enable-libbluray --enable-libjxl --enable-libmp3lame --enable-libopus --enable-libplacebo --enable-librist --enable-libssh --enable-libtheora --enable-libvpx --enable-libwebp --enable-libzmq --enable-lv2 --enable-libvpl --enable-openal --enable-liboapv --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-librav1e --enable-librubberband --enable-schannel --enable-sdl2 --enable-libsnappy --enable-libsoxr --enable-libsrt --enable-libsvtav1 --enable-libtwolame --enable-libuavs3d --disable-libdrm --enable-vaapi --enable-libvidstab --enable-libvvenc --enable-whisper --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxvid --enable-libzimg --enable-libzvbi --extra-cflags=-DLIBTWOLAME_STATIC --extra-cxxflags= --extra-libs=-lgomp --extra-ldflags=-pthread --extra-ldexeflags= --cc=x86_64-w64-mingw32-gcc --cxx=x86_64-w64-mingw32-g++ --ar=x86_64-w64-mingw32-gcc-ar --ranlib=x86_64-w64-mingw32-gcc-ranlib --nm=x86_64-w64-mingw32-gcc-nm --extra-version=20251024
+  libavutil      60. 13.100 / 60. 13.100
+  libavcodec     62. 16.100 / 62. 16.100
+  libavformat    62.  6.101 / 62.  6.101
+  libavdevice    62.  2.100 / 62.  2.100
+  libavfilter    11.  9.100 / 11.  9.100
+  libswscale      9.  3.100 /  9.  3.100
+  libswresample   6.  2.100 /  6.  2.100
+[tcp @ 000002054a743200] Starting connection attempt to 103.145.160.76 port 443
+[tcp @ 000002054a743200] Successfully connected to 103.145.160.76 port 443
+[mov,mp4,m4a,3gp,3g2,mj2 @ 000002054a6e34c0] advanced_editlist does not work with fragmented MP4. disabling.
+[libdav1d @ 000002054a7cd840] libdav1d fcbc3d1
+[tcp @ 000002054a7427c0] Starting connection attempt to 103.145.160.76 port 443
+[tcp @ 000002054a7427c0] Successfully connected to 103.145.160.76 port 443
+[tcp @ 000002054a7c36c0] Starting connection attempt to 74.125.101.106 port 443
+[tcp @ 000002054a7c36c0] Successfully connected to 74.125.101.106 port 443
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'https://rr1---sn-pjvo2aopq-jb3s.googlevideo.com/videoplayback?expire=1769668824&ei=eKx6ae7_DO-I4t4PuqGHgQ0&ip=103.190.47.84&id=o-AM5dT0FeHthqPABIJbyc_jbSO8ejhupIi9WEKioQs_pK&itag=399&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&cps=753&met=1769647224%2C&mh=7c&mm=31%2C29&mn=sn-pjvo2aopq-jb3s%2Csn-npoeenl7&ms=au%2Crdu&mv=m&mvi=1&pl=24&rms=au%2Cau&initcwndbps=746250&bui=AW-iu_qMbedtkBLVZOIGYL9xk_Xt4U7fKr8wlfviSGOtpDvT-vkADKUN-TtljkrxXD6w8td1E-Q3VDeK&spc=q5xjPI2NhoYwUBWd2Y-z3DLQO1VhgmscaVhfiKl1gQuJk1d6HcXyhaqsDlZsX5SdS7ZUUA&vprv=1&svpuc=1&mime=video%2Fmp4&rqh=1&gir=yes&clen=30415996&dur=213.040&lmt=1766970905427393&mt=1769646837&fvip=5&keepalive=yes&fexp=51552689%2C51565116%2C51565682%2C51580968&c=ANDROID&txp=5537534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJEij0EwRgIhAJmFBhJG4nMsuWrqXDdi2O0dRjKQIk7nQNt5x4E1Wb82AiEAoQeATATK_RP2jxDiEIhYqDHD-M7ZDBsDi3MpYkVqTaI%3D&lsparams=cps%2Cmet%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRQIgUzKqYGnWrvC37BnBc_cMYPvtaIwKlwW7k6FCnM82qW8CIQCLcpWRQ0runvBFMqOdC7SsLaJlSJmpggRoiPGowuDReg%3D%3D':
+  Metadata:
+    major_brand     : dash
+    minor_version   : 0
+    compatible_brands: iso6av01mp41
+    creation_time   : 2025-12-28T21:09:43.000000Z
+  Duration: 00:03:33.04, start: 0.000000, bitrate: 1142 kb/s
+  Stream #0:0[0x1](und): Video: av1 (libdav1d) (Main), 1 reference frame (av01 / 0x31307661), yuv420p(tv, bt709), 1920x1080, 775 kb/s, 25 fps, 25 tbr, 12800 tbn (default)
+    Metadata:
+      creation_time   : 2025-12-28T21:09:43.000000Z
+      handler_name    : ISO Media file produced by Google Inc.
+      vendor_id       : [0][0][0][0]
+[tcp @ 000002054a7436c0] Starting connection attempt to 103.145.160.76 port 443
+[tcp @ 000002054a7436c0] Successfully connected to 103.145.160.76 port 443
+[tcp @ 000002054a7c3c00] Starting connection attempt to 74.125.101.106 port 443
+[tcp @ 000002054a7c3c00] Successfully connected to 74.125.101.106 port 443
+[mov,mp4,m4a,3gp,3g2,mj2 @ 000002054a7cd840] advanced_editlist does not work with fragmented MP4. disabling.
+[tcp @ 000002054a742200] Starting connection attempt to 103.145.160.76 port 443
+[tcp @ 000002054a742200] Successfully connected to 103.145.160.76 port 443
+[tcp @ 000002054a7c3a40] Starting connection attempt to 74.125.101.106 port 443
+[tcp @ 000002054a7c3a40] Successfully connected to 74.125.101.106 port 443
+Input #1, mov,mp4,m4a,3gp,3g2,mj2, from 'https://rr1---sn-pjvo2aopq-jb3s.googlevideo.com/videoplayback?expire=1769668824&ei=eKx6ae7_DO-I4t4PuqGHgQ0&ip=103.190.47.84&id=o-AM5dT0FeHthqPABIJbyc_jbSO8ejhupIi9WEKioQs_pK&itag=140&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&cps=753&met=1769647224%2C&mh=7c&mm=31%2C29&mn=sn-pjvo2aopq-jb3s%2Csn-npoeenl7&ms=au%2Crdu&mv=m&mvi=1&pl=24&rms=au%2Cau&initcwndbps=746250&bui=AW-iu_qMbedtkBLVZOIGYL9xk_Xt4U7fKr8wlfviSGOtpDvT-vkADKUN-TtljkrxXD6w8td1E-Q3VDeK&spc=q5xjPI2NhoYwUBWd2Y-z3DLQO1VhgmscaVhfiKl1gQuJk1d6HcXyhaqsDlZsX5SdS7ZUUA&vprv=1&svpuc=1&mime=audio%2Fmp4&rqh=1&gir=yes&clen=3449447&dur=213.089&lmt=1766955925572207&mt=1769646837&fvip=5&keepalive=yes&fexp=51552689%2C51565116%2C51565682%2C51580968&c=ANDROID&txp=5532534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJEij0EwRgIhAP91aCRvfPVD_mPAg-q9oozgf4Vy8zUB74SySLnRXtHnAiEA6oBffzj2GcmvkuSVhole6UGfjkKxQEwUBoayh2nob_8%3D&lsparams=cps%2Cmet%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRQIgUzKqYGnWrvC37BnBc_cMYPvtaIwKlwW7k6FCnM82qW8CIQCLcpWRQ0runvBFMqOdC7SsLaJlSJmpggRoiPGowuDReg%3D%3D':
+  Metadata:
+    major_brand     : dash
+    minor_version   : 0
+    compatible_brands: iso6mp41
+    creation_time   : 2025-12-28T21:03:51.000000Z
+    encoder         : Google
+  Duration: 00:03:33.09, start: 0.000000, bitrate: 129 kb/s
+  Stream #1:0[0x1](und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, stereo, fltp, 128 kb/s (default)
+    Metadata:
+      creation_time   : 2025-12-28T21:03:51.000000Z
+      handler_name    : ISO Media file produced by Google Inc.
+      vendor_id       : [0][0][0][0]
+[out#0/matroska @ 000002054c4ffb80] Adding streams from explicit maps...
+[vost#0:0/libx264 @ 000002054c4e95c0] Created video stream from input stream 0:0
+[libdav1d @ 000002054c4ed680] libdav1d fcbc3d1
+[aost#0:1/libvorbis @ 000002054c61ab80] Created audio stream from input stream 1:0
+Stream mapping:
+  Stream #0:0 -> #0:0 (av1 (libdav1d) -> h264 (libx264))
+  Stream #1:0 -> #0:1 (aac (native) -> vorbis (libvorbis))
+[vost#0:0/libx264 @ 000002054c4e95c0] Starting thread...
+[aost#0:1/libvorbis @ 000002054c61ab80] Starting thread...
+[vf#0:0 @ 000002054c585600] Starting thread...
+[af#0:1 @ 000002054c61fd00] Starting thread...
+[vist#0:0/av1 @ 000002054a6f3ac0] [dec:libdav1d @ 000002054a7b5c80] Starting thread...
+[aist#1:0/aac @ 000002054c52d700] [dec:aac @ 000002054c626500] Starting thread...
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 000002054a6e3140] Starting thread...
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 000002054a6e87c0] Starting thread...
+Press [q] to stop, [?] for help
+[tcp @ 000002054a742d40] Starting connection attempt to 103.145.160.76 port 443
+[graph_-1_in_1:0 @ 000002054c4ffd80] tb:1/44100 samplefmt:fltp samplerate:44100 chlayout:stereo
+[tcp @ 000002054a742d40] Successfully connected to 103.145.160.76 port 443
+[graph -1 input from stream 0:0 @ 000002054c74ea40] w:1920 h:1080 pixfmt:yuv420p tb:1/12800 fr:25/1 sar:1/1 csp:bt709 range:tv alpha:unspecified
+[libx264 @ 000002054c4fee80] using SAR=1/1
+[libx264 @ 000002054c4fee80] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 000002054c4fee80] profile High, level 4.0, 4:2:0, 8-bit
+[libx264 @ 000002054c4fee80] 264 - core 165 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=18 lookahead_threads=3 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, matroska, to 'file:reproduce_temp.mkv.part':
+  Metadata:
+    major_brand     : dash
+    minor_version   : 0
+    compatible_brands: iso6av01mp41
+    encoder         : Lavf62.6.101
+  Stream #0:0(und): Video: h264, 1 reference frame (H264 / 0x34363248), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 25 fps, 1k tbn (default)
+    Metadata:
+      encoder         : Lavc62.16.100 libx264
+      creation_time   : 2025-12-28T21:09:43.000000Z
+      handler_name    : ISO Media file produced by Google Inc.
+      vendor_id       : [0][0][0][0]
+    Side data:
+      CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+  Stream #0:1(und): Audio: vorbis (oV[0][0] / 0x566F), 44100 Hz, stereo, fltp (default)
+    Metadata:
+      encoder         : Lavc62.16.100 libvorbis
+      creation_time   : 2025-12-28T21:03:51.000000Z
+      handler_name    : ISO Media file produced by Google Inc.
+      vendor_id       : [0][0][0][0]
+[out#0/matroska @ 000002054c4ffb80] Starting thread...
+frame=    0 fps=0.0 q=0.0 size=       5KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:01.02    
+frame=    0 fps=0.0 q=0.0 size=       5KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:01.53    
+frame=    0 fps=0.0 q=0.0 size=       5KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:02.05    
+frame=    0 fps=0.0 q=0.0 size=       5KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:02.56    
+frame=    0 fps=0.0 q=0.0 size=       5KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:03.09    
+frame=    0 fps=0.0 q=0.0 size=       5KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:03.61    
+frame=    0 fps=0.0 q=0.0 size=       5KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:04.16    
+frame=    6 fps=1.3 q=28.0 size=       5KiB time=00:00:00.09 bitrate= 416.7kbits/s speed=0.0202x elapsed=0:00:04.73    
+frame=   10 fps=1.9 q=28.0 size=       5KiB time=00:00:00.13 bitrate= 295.7kbits/s speed=0.0257x elapsed=0:00:05.25    
+frame=   14 fps=2.4 q=28.0 size=       5KiB time=00:00:00.46 bitrate=  85.1kbits/s speed=0.081x elapsed=0:00:05.78    
+frame=   19 fps=3.0 q=28.0 size=       5KiB time=00:00:00.64 bitrate=  62.4kbits/s speed=0.101x elapsed=0:00:06.32    
+frame=   27 fps=3.9 q=28.0 size=       5KiB time=00:00:00.90 bitrate=  44.0kbits/s speed=0.132x elapsed=0:00:06.86    
+frame=   30 fps=4.0 q=28.0 size=       5KiB time=00:00:00.93 bitrate=  42.9kbits/s speed=0.125x elapsed=0:00:07.45    
+frame=   30 fps=3.8 q=28.0 size=       5KiB time=00:00:00.93 bitrate=  42.9kbits/s speed=0.117x elapsed=0:00:07.97    
+frame=   38 fps=4.4 q=28.0 size=     256KiB time=00:00:01.44 bitrate=1456.4kbits/s speed=0.167x elapsed=0:00:08.64    
+frame=   41 fps=4.5 q=28.0 size=     256KiB time=00:00:01.56 bitrate=1344.3kbits/s speed=0.17x elapsed=0:00:09.16    
+frame=   41 fps=4.2 q=28.0 size=     256KiB time=00:00:01.56 bitrate=1344.3kbits/s speed=0.161x elapsed=0:00:09.67    
+frame=   47 fps=4.6 q=28.0 size=     256KiB time=00:00:01.69 bitrate=1236.2kbits/s speed=0.166x elapsed=0:00:10.19    
+frame=   51 fps=4.8 q=28.0 size=     256KiB time=00:00:01.88 bitrate=1114.2kbits/s speed=0.176x elapsed=0:00:10.70    
+frame=   51 fps=4.5 q=28.0 size=     256KiB time=00:00:01.88 bitrate=1114.2kbits/s speed=0.168x elapsed=0:00:11.22    
+frame=   51 fps=4.3 q=28.0 size=     256KiB time=00:00:01.88 bitrate=1114.2kbits/s speed=0.16x elapsed=0:00:11.73    
+frame=   62 fps=5.1 q=28.0 size=     256KiB time=00:00:02.33 bitrate= 897.0kbits/s speed=0.191x elapsed=0:00:12.26    
+frame=   70 fps=5.5 q=28.0 size=     256KiB time=00:00:02.72 bitrate= 771.0kbits/s speed=0.213x elapsed=0:00:12.77    
+frame=   71 fps=5.3 q=28.0 size=     256KiB time=00:00:02.75 bitrate= 761.0kbits/s speed=0.207x elapsed=0:00:13.28    
+frame=   71 fps=5.1 q=28.0 size=     256KiB time=00:00:02.75 bitrate= 761.0kbits/s speed= 0.2x elapsed=0:00:13.80    
+frame=   72 fps=5.0 q=28.0 size=     256KiB time=00:00:02.75 bitrate= 761.0kbits/s speed=0.193x elapsed=0:00:14.31    
+frame=   82 fps=5.5 q=28.0 size=     256KiB time=00:00:03.18 bitrate= 658.9kbits/s speed=0.215x elapsed=0:00:14.83    
+frame=   89 fps=5.8 q=28.0 size=     256KiB time=00:00:03.39 bitrate= 617.3kbits/s speed=0.221x elapsed=0:00:15.35    
+frame=   94 fps=5.9 q=28.0 size=     256KiB time=00:00:03.52 bitrate= 594.2kbits/s speed=0.222x elapsed=0:00:15.87    
+frame=   95 fps=5.8 q=28.0 size=     256KiB time=00:00:03.58 bitrate= 584.3kbits/s speed=0.219x elapsed=0:00:16.39    
+frame=   99 fps=5.9 q=28.0 size=     256KiB time=00:00:03.82 bitrate= 547.6kbits/s speed=0.226x elapsed=0:00:16.92    
+frame=  102 fps=5.8 q=28.0 size=     256KiB time=00:00:03.89 bitrate= 537.8kbits/s speed=0.224x elapsed=0:00:17.43    
+frame=  110 fps=6.1 q=28.0 size=     256KiB time=00:00:04.18 bitrate= 500.5kbits/s speed=0.233x elapsed=0:00:17.94    
+frame=  117 fps=6.3 q=28.0 size=     256KiB time=00:00:04.59 bitrate= 456.0kbits/s speed=0.249x elapsed=0:00:18.46    
+frame=  123 fps=6.5 q=28.0 size=    2560KiB time=00:00:04.78 bitrate=4383.0kbits/s speed=0.252x elapsed=0:00:18.97    
+frame=  125 fps=6.4 q=28.0 size=    2560KiB time=00:00:04.84 bitrate=4326.6kbits/s speed=0.249x elapsed=0:00:19.48    
+frame=  125 fps=6.2 q=28.0 size=    2560KiB time=00:00:04.84 bitrate=4326.6kbits/s speed=0.242x elapsed=0:00:20.00    
+frame=  130 fps=6.3 q=28.0 size=    2560KiB time=00:00:05.12 bitrate=4096.0kbits/s speed=0.25x elapsed=0:00:20.52    
+frame=  138 fps=6.6 q=28.0 size=    2560KiB time=00:00:05.41 bitrate=3875.2kbits/s speed=0.257x elapsed=0:00:21.03    
+frame=  144 fps=6.7 q=28.0 size=    2560KiB time=00:00:05.63 bitrate=3718.7kbits/s speed=0.262x elapsed=0:00:21.56    
+frame=  148 fps=6.7 q=28.0 size=    2560KiB time=00:00:05.63 bitrate=3718.7kbits/s speed=0.256x elapsed=0:00:22.07    
+frame=  148 fps=6.6 q=28.0 size=    2560KiB time=00:00:05.63 bitrate=3718.7kbits/s speed=0.25x elapsed=0:00:22.58    
+frame=  158 fps=6.8 q=28.0 size=    2560KiB time=00:00:06.17 bitrate=3397.0kbits/s speed=0.267x elapsed=0:00:23.10    
+frame=  164 fps=6.9 q=28.0 size=    2560KiB time=00:00:06.34 bitrate=3303.0kbits/s speed=0.269x elapsed=0:00:23.61    
+frame=  166 fps=6.9 q=28.0 size=    2560KiB time=00:00:06.43 bitrate=3260.5kbits/s speed=0.266x elapsed=0:00:24.13    
+frame=  169 fps=6.9 q=28.0 size=    2560KiB time=00:00:06.63 bitrate=3161.4kbits/s speed=0.269x elapsed=0:00:24.64    
+frame=  182 fps=7.2 q=28.0 size=    2560KiB time=00:00:07.10 bitrate=2950.9kbits/s speed=0.282x elapsed=0:00:25.17    
+[vf#0:0 @ 000002054c585600] Filtergraph returned EOF, finishing
+[vf#0:0 @ 000002054c585600] All consumers returned EOF
+frame=  185 fps=7.2 q=28.0 size=    3840KiB time=00:00:07.52 bitrate=4180.5kbits/s speed=0.293x elapsed=0:00:25.67    
+[vf#0:0 @ 000002054c585600] Terminating thread with return code 0 (success)
+[af#0:1 @ 000002054c61fd00] Filtergraph returned EOF, finishing
+[af#0:1 @ 000002054c61fd00] All consumers returned EOF
+[aost#0:1/libvorbis @ 000002054c61ab80] [enc:libvorbis @ 000002054c61bd80] Encoder thread received EOF
+[vost#0:0/libx264 @ 000002054c4e95c0] [enc:libx264 @ 000002054c55fb00] Encoder thread received EOF
+[vist#0:0/av1 @ 000002054a6f3ac0] [dec:libdav1d @ 000002054a7b5c80] Decoder returned EOF, finishing
+frame=  188 fps=7.2 q=28.0 size=    3840KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:26.19    
+[af#0:1 @ 000002054c61fd00] Terminating thread with return code 0 (success)
+[aost#0:1/libvorbis @ 000002054c61ab80] Terminating thread with return code 0 (success)
+[vist#0:0/av1 @ 000002054a6f3ac0] [dec:libdav1d @ 000002054a7b5c80] Terminating thread with return code 0 (success)
+[vist#0:0/av1 @ 000002054a6f3ac0] All consumers of this stream are done
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 000002054a6e3140] All consumers are done
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 000002054a6e3140] Terminating thread with return code 0 (success)
+[aist#1:0/aac @ 000002054c52d700] [dec:aac @ 000002054c626500] Decoder returned EOF, finishing
+[aist#1:0/aac @ 000002054c52d700] [dec:aac @ 000002054c626500] Terminating thread with return code 0 (success)
+[aist#1:0/aac @ 000002054c52d700] All consumers of this stream are done
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 000002054a6e87c0] All consumers are done
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 000002054a6e87c0] Terminating thread with return code 0 (success)
+frame=  188 fps=7.0 q=28.0 size=    3840KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:26.70    
+frame=  193 fps=7.1 q=28.0 size=    3840KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:27.23    
+frame=  194 fps=7.0 q=28.0 size=    3840KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:27.74    
+frame=  206 fps=7.3 q=28.0 size=    3840KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:28.25    
+frame=  210 fps=7.3 q=28.0 size=    3840KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:28.87    
+frame=  214 fps=7.3 q=28.0 size=    3840KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:29.48    
+frame=  222 fps=7.4 q=28.0 size=    3840KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:30.03    
+frame=  234 fps=7.6 q=-1.0 size=    3840KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:30.59    
+frame=  235 fps=7.6 q=-1.0 size=    3840KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:31.10    
+frame=  246 fps=7.8 q=-1.0 size=    3840KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:31.61    
+[vost#0:0/libx264 @ 000002054c4e95c0] Terminating thread with return code 0 (success)
+[out#0/matroska @ 000002054c4ffb80] All streams finished
+[out#0/matroska @ 000002054c4ffb80] Terminating thread with return code 0 (success)
+[AVIOContext @ 000002054c53a580] Statistics: 5794215 bytes written, 2 seeks, 24 writeouts
+[out#0/matroska @ 000002054c4ffb80] Output file #0 (file:reproduce_temp.mkv.part):
+[out#0/matroska @ 000002054c4ffb80]   Output stream #0:0 (video): 250 frames encoded; 250 packets muxed (5641200 bytes); 
+[out#0/matroska @ 000002054c4ffb80]   Output stream #0:1 (audio): 6891 frames encoded (441000 samples); 682 packets muxed (136534 bytes); 
+[out#0/matroska @ 000002054c4ffb80]   Total: 932 packets (5777734 bytes) muxed
+[out#0/matroska @ 000002054c4ffb80] video:5509KiB audio:133KiB subtitle:0KiB other streams:0KiB global headers:4KiB muxing overhead: 0.199663%
+frame=  250 fps=7.8 q=-1.0 Lsize=    5654KiB time=00:00:09.92 bitrate=4668.8kbits/s speed=0.311x elapsed=0:00:31.84    
+[libx264 @ 000002054c4fee80] frame I:7     Avg QP:19.71  size: 58056
+[libx264 @ 000002054c4fee80] frame P:71    Avg QP:24.02  size: 33284
+[libx264 @ 000002054c4fee80] frame B:172   Avg QP:25.22  size: 16692
+[libx264 @ 000002054c4fee80] consecutive B-frames:  4.4%  7.2% 13.2% 75.2%
+[libx264 @ 000002054c4fee80] mb I  I16..4: 15.5% 78.4%  6.1%
+[libx264 @ 000002054c4fee80] mb P  I16..4:  8.0% 35.0%  2.1%  P16..4: 19.9%  5.2%  1.4%  0.0%  0.0%    skip:28.4%
+[libx264 @ 000002054c4fee80] mb B  I16..4:  2.6%  7.7%  0.2%  B16..8: 27.4%  4.8%  0.6%  direct: 5.6%  skip:51.1%  L0:46.2% L1:46.0% BI: 7.8%
+[libx264 @ 000002054c4fee80] 8x8 transform intra:76.3% inter:89.5%
+[libx264 @ 000002054c4fee80] coded y,uvDC,uvAC intra: 49.3% 46.1% 4.5% inter: 14.6% 19.7% 0.0%
+[libx264 @ 000002054c4fee80] i16 v,h,dc,p: 27% 26%  4% 43%
+[libx264 @ 000002054c4fee80] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 23% 23% 15%  6%  8%  7%  7%  6%  6%
+[libx264 @ 000002054c4fee80] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 23% 25% 12%  7% 12%  6%  7%  4%  4%
+[libx264 @ 000002054c4fee80] i8c dc,h,v,p: 51% 20% 24%  6%
+[libx264 @ 000002054c4fee80] Weighted P-Frames: Y:2.8% UV:2.8%
+[libx264 @ 000002054c4fee80] ref P L0: 57.8% 23.0% 12.1%  7.1%  0.0%
+[libx264 @ 000002054c4fee80] ref B L0: 91.0%  6.8%  2.2%
+[libx264 @ 000002054c4fee80] ref B L1: 98.0%  2.0%
+[libx264 @ 000002054c4fee80] kb/s:4512.42
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 000002054a6e3140] Input file #0 (https://rr1---sn-pjvo2aopq-jb3s.googlevideo.com/videoplayback?expire=1769668824&ei=eKx6ae7_DO-I4t4PuqGHgQ0&ip=103.190.47.84&id=o-AM5dT0FeHthqPABIJbyc_jbSO8ejhupIi9WEKioQs_pK&itag=399&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&cps=753&met=1769647224%2C&mh=7c&mm=31%2C29&mn=sn-pjvo2aopq-jb3s%2Csn-npoeenl7&ms=au%2Crdu&mv=m&mvi=1&pl=24&rms=au%2Cau&initcwndbps=746250&bui=AW-iu_qMbedtkBLVZOIGYL9xk_Xt4U7fKr8wlfviSGOtpDvT-vkADKUN-TtljkrxXD6w8td1E-Q3VDeK&spc=q5xjPI2NhoYwUBWd2Y-z3DLQO1VhgmscaVhfiKl1gQuJk1d6HcXyhaqsDlZsX5SdS7ZUUA&vprv=1&svpuc=1&mime=video%2Fmp4&rqh=1&gir=yes&clen=30415996&dur=213.040&lmt=1766970905427393&mt=1769646837&fvip=5&keepalive=yes&fexp=51552689%2C51565116%2C51565682%2C51580968&c=ANDROID&txp=5537534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJEij0EwRgIhAJmFBhJG4nMsuWrqXDdi2O0dRjKQIk7nQNt5x4E1Wb82AiEAoQeATATK_RP2jxDiEIhYqDHD-M7ZDBsDi3MpYkVqTaI%3D&lsparams=cps%2Cmet%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRQIgUzKqYGnWrvC37BnBc_cMYPvtaIwKlwW7k6FCnM82qW8CIQCLcpWRQ0runvBFMqOdC7SsLaJlSJmpggRoiPGowuDReg%3D%3D):
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 000002054a6e3140]   Input stream #0:0 (video): 282 packets read (1816008 bytes); 269 frames decoded; 0 decode errors; 
+[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 000002054a6e3140]   Total: 282 packets (1816008 bytes) demuxed
+[AVIOContext @ 000002054a7c0540] Statistics: 1995712 bytes read, 2 seeks
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 000002054a6e87c0] Input file #1 (https://rr1---sn-pjvo2aopq-jb3s.googlevideo.com/videoplayback?expire=1769668824&ei=eKx6ae7_DO-I4t4PuqGHgQ0&ip=103.190.47.84&id=o-AM5dT0FeHthqPABIJbyc_jbSO8ejhupIi9WEKioQs_pK&itag=140&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&cps=753&met=1769647224%2C&mh=7c&mm=31%2C29&mn=sn-pjvo2aopq-jb3s%2Csn-npoeenl7&ms=au%2Crdu&mv=m&mvi=1&pl=24&rms=au%2Cau&initcwndbps=746250&bui=AW-iu_qMbedtkBLVZOIGYL9xk_Xt4U7fKr8wlfviSGOtpDvT-vkADKUN-TtljkrxXD6w8td1E-Q3VDeK&spc=q5xjPI2NhoYwUBWd2Y-z3DLQO1VhgmscaVhfiKl1gQuJk1d6HcXyhaqsDlZsX5SdS7ZUUA&vprv=1&svpuc=1&mime=audio%2Fmp4&rqh=1&gir=yes&clen=3449447&dur=213.089&lmt=1766955925572207&mt=1769646837&fvip=5&keepalive=yes&fexp=51552689%2C51565116%2C51565682%2C51580968&c=ANDROID&txp=5532534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJEij0EwRgIhAP91aCRvfPVD_mPAg-q9oozgf4Vy8zUB74SySLnRXtHnAiEA6oBffzj2GcmvkuSVhole6UGfjkKxQEwUBoayh2nob_8%3D&lsparams=cps%2Cmet%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRQIgUzKqYGnWrvC37BnBc_cMYPvtaIwKlwW7k6FCnM82qW8CIQCLcpWRQ0runvBFMqOdC7SsLaJlSJmpggRoiPGowuDReg%3D%3D):
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 000002054a6e87c0]   Input stream #1:0 (audio): 445 packets read (165257 bytes); 436 frames decoded; 0 decode errors (446464 samples); 
+[in#1/mov,mp4,m4a,3gp,3g2,mj2 @ 000002054a6e87c0]   Total: 445 packets (165257 bytes) demuxed
+[AVIOContext @ 000002054c4f1040] Statistics: 196608 bytes read, 1 seeks
+
+Exiting with exit code 0
+
