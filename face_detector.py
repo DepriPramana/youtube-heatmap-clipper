@@ -64,10 +64,26 @@ class FaceDetector:
             width = min(width, w - x)
             height = min(height, h - y)
             
+            # EXPAND BOUNDING BOX UPWARD to include full head (hair, forehead, etc.)
+            # MediaPipe detects face only, we need to expand for head
+            expansion_top = int(height * 0.4)  # Add 40% of face height above
+            expansion_sides = int(width * 0.1)  # Add 10% on each side for margin
+            
+            # Calculate expanded bbox
+            expanded_y = max(0, y - expansion_top)
+            expanded_x = max(0, x - expansion_sides)
+            expanded_height = min(height + expansion_top, h - expanded_y)
+            expanded_width = min(width + 2 * expansion_sides, w - expanded_x)
+            
+            # Center point of EXPANDED bbox (better for cropping)
+            center_x = expanded_x + expanded_width // 2
+            center_y = expanded_y + expanded_height // 2
+            
             faces.append({
-                'bbox': (x, y, width, height),
+                'bbox': (x, y, width, height),  # Original face bbox
+                'expanded_bbox': (expanded_x, expanded_y, expanded_width, expanded_height),  # Expanded for head
                 'confidence': detection.score[0],
-                'center': (x + width // 2, y + height // 2)
+                'center': (center_x, center_y)  # Center of expanded bbox
             })
         
         return faces
