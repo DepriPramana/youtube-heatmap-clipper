@@ -758,22 +758,30 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     
                     # Use active speaker detection
                     detector = ActiveSpeakerDetector()
-                    speaker_info = detector.detect_active_speaker(
+                    # Returns list of (timestamp, face_dict) tuples
+                    speaker_results = detector.detect_active_speaker(
                         temp_file,
-                        sample_frames=60,
-                        confidence_threshold=0.3
+                        sample_rate=15  # Every 15 frames
                     )
                     
-                    if speaker_info and 'center' in speaker_info and 'bbox' in speaker_info:
-                        cx, cy = speaker_info['center']
-                        bbox = speaker_info['bbox']
+                    # Filter out None results and aggregate speaker positions
+                    active_speakers = [face for ts, face in speaker_results if face is not None]
+                    
+                    if len(active_speakers) >= 5:  # Need at least 5 detections to be confident
+                        # Average the speaker positions
+                        cx = int(sum(f['center'][0] for f in active_speakers) / len(active_speakers))
+                        cy = int(sum(f['center'][1] for f in active_speakers) / len(active_speakers))
                         
-                        print(f"  ✓ Active speaker detected at ({cx},{cy})")
+                        # Get average bbox
+                        avg_bbox = [
+                            int(sum(f['bbox'][0] for f in active_speakers) / len(active_speakers)),
+                            int(sum(f['bbox'][1] for f in active_speakers) / len(active_speakers)),
+                            int(sum(f['bbox'][2] for f in active_speakers) / len(active_speakers)),
+                            int(sum(f['bbox'][3] for f in active_speakers) / len(active_speakers))
+                        ]
+                        
+                        print(f"  ✓ Active speaker detected at ({cx},{cy}) in {len(active_speakers)}/{len(speaker_results)} frames")
                         print(f"  ✓ Using FULL FRAME crop to active speaker (NO split!)")
-                        
-                        # Expand bounding box with margin
-                        margin_x = int(bbox[2] * 0.4)  # 40% width margin
-                        margin_y = int(bbox[3] * 0.6)  # 60% height margin (more on top for head)
                         
                         # Calculate crop dimensions maintaining 9:16 aspect
                         crop_h = orig_h
