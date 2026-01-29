@@ -731,20 +731,20 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                 
                 # Build filter:
                 # 1. Split input into 2 streams
-                # 2. Crop left half, scale to cover 720x640, then center crop
-                # 3. Crop right half, scale to cover 720x640, then center crop
+                # 2. Crop left half and scale to 720x640
+                # 3. Crop right half and scale to 720x640
                 # 4. Stack vertically to get 720x1280
                 
                 wm = get_watermark_filter(watermark_text, watermark_pos)
                 
-                # Process each half separately
-                # Using force_original_aspect_ratio=increase ensures video fills target dimensions
+                # Process each half: crop then scale directly to target size
+                # Using setsar=1 to ensure square pixels
                 fc = (
                     f"[0:v]split=2[left_src][right_src];"
-                    # Left speaker (top): crop left half, scale to cover, center crop to exact size
-                    f"[left_src]crop=iw/2:ih:0:0,scale={half_w}:{half_h}:force_original_aspect_ratio=increase,crop={half_w}:{half_h}:(iw-{half_w})/2:(ih-{half_h})/2[top];"
-                    # Right speaker (bottom): crop right half, scale to cover, center crop to exact size
-                    f"[right_src]crop=iw/2:ih:iw/2:0,scale={half_w}:{half_h}:force_original_aspect_ratio=increase,crop={half_w}:{half_h}:(iw-{half_w})/2:(ih-{half_h})/2[bottom];"
+                    # Left speaker (top): crop left half, scale to exact 720x640
+                    f"[left_src]crop=iw/2:ih:0:0,scale={half_w}:{half_h},setsar=1[top];"
+                    # Right speaker (bottom): crop right half, scale to exact 720x640
+                    f"[right_src]crop=iw/2:ih:iw/2:0,scale={half_w}:{half_h},setsar=1[bottom];"
                     # Stack vertically
                     f"[top][bottom]vstack[stacked]"
                 )
