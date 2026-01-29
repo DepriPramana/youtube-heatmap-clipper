@@ -19,6 +19,8 @@ const I18N = {
     "opt.crop.smart_speaker": "Smart Speaker",
     "opt.crop.split_left": "Split Left",
     "opt.crop.split_right": "Split Right",
+    "opt.crop.split_top": "Split Top",
+    "opt.crop.split_bottom": "Split Bottom",
     "help.crop": "Split itu buat gaming: atas gameplay, bawah facecam.",
     "label.padding": "Padding (detik)",
     "help.padding": "Nambah detik sebelum & sesudah momen biar nggak “kepotong nanggung”.",

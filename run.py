@@ -80,7 +80,7 @@ def parse_args():
     parser.add_argument("--url", help="YouTube URL (watch/shorts/youtu.be)")
     parser.add_argument(
         "--crop",
-        choices=["default", "split_left", "split_right", "smart_speaker"],
+        choices=["default", "split_left", "split_right", "split_top", "split_bottom", "smart_speaker"],
         help="Crop mode",
     )
     parser.add_argument(
@@ -261,9 +261,20 @@ def build_cover_scale_crop_vf(target_w, target_h):
     Returns:
         FFmpeg video filter string
     """
-    # Scale to cover target dimensions (maintain aspect ratio, scale to fill)
-    # Then crop from center to exact target size
-    return f"scale='if(gte(iw/ih,{target_w}/{target_h}),{target_w},-2)':'if(gte(iw/ih,{target_w}/{target_h}),-2,{target_h})',crop={target_w}:{target_h}"
+    # Two-step approach:
+    # 1. Scale to cover (ensure video is large enough to fill target)
+    #    - If video is wider: scale width to target, height auto (maintains aspect)
+    #    - If video is taller: scale height to target, width auto
+    # 2. Crop from center to exact target dimensions
+    
+    # Scale filter: scale to fit the larger dimension
+    # Then crop from center
+    scale_filter = f"scale='if(gte(iw/ih,{target_w}/{target_h}),-2,{target_w})':'if(gte(iw/ih,{target_w}/{target_h}),{target_h},-2)'"
+    
+    # Crop from center with calculated coordinates
+    crop_filter = f"crop={target_w}:{target_h}:(iw-{target_w})/2:(ih-{target_h})/2"
+    
+    return f"{scale_filter},{crop_filter}"
 
 
 def ambil_most_replayed(video_id):
@@ -586,10 +597,110 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
                     "-c:a", "aac", "-b:a", "128k",
                     cropped_file
+        if crop_mode == "split_right":
+            if OUTPUT_RATIO == "original" or not out_w or not out_h or out_h < out_w:
+                vf = build_cover_scale_crop_vf(out_w or 720, out_h or 1280) if OUTPUT_RATIO != "original" else None
+                vf = apply_wm_simple(vf)
+                cmd_crop = [
+                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                    "-i", temp_file,
+                    *([] if not vf else ["-vf", vf]),
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-c:a", "aac", "-b:a", "128k",
+                    cropped_file
                 ]
             else:
+                top_h, bottom_h = get_split_heights(out_h)
+                scaled = build_cover_scale_vf(out_w, out_h)
+                
+                wm = get_watermark_filter(watermark_text, watermark_pos)
+                
+                vf = (
+                    f"{scaled}[scaled];"
+                    f"[scaled]split=2[s1][s2];"
+                    f"[s1]crop={out_w}:{top_h}:(iw-{out_w})/2:(ih-{out_h})/2[top];"
+                    f"[s2]crop={out_w}:{bottom_h}:iw-{out_w}:ih-{bottom_h}[bottom];"
+                    f"[top][bottom]vstack[pre_out]"
+                )
+                
+                if wm:
+                    vf += f";[pre_out]{wm}[out]"
+                else:
+                    vf = vf.replace("[pre_out]", "[out]")
+
+                cmd_crop = [
+                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                    "-i", temp_file,
+                    "-filter_complex", vf,
+                    "-map", "[out]", "-map", "0:a?",
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-c:a", "aac", "-b:a", "128k",
+                    cropped_file
+                ]
+        elif crop_mode == "split_top":
+            # Split Top Mode: Crop upper half for first speaker
+            # Video is split vertically (atas-bawah), crop to top half
+            if OUTPUT_RATIO == "original":
+                print("  [WARN] split_top tidak support original ratio, fallback ke default.")
+                crop_mode = "default"
+                # The continue here would break the flow, so we need to re-evaluate cmd_crop for default
+                # For now, let's assume this is handled by the caller or a subsequent block.
+                # If this is meant to re-enter the loop, it's not possible here.
+                # Assuming the intent is to just set crop_mode and proceed to the default logic.
+                # However, the provided snippet has `continue` which is problematic outside a loop.
+                # I will remove `continue` and let it fall through to the default logic if needed,
+                # or assume the user will handle the `crop_mode = "default"` case.
+                # For now, I'll keep the `crop_mode = "default"` and proceed with the `split_top` logic,
+                # as the `continue` would be a syntax error here.
+                # Given the context, it's likely a placeholder for "skip this block and use default".
+                # I will make it fall through to the default logic by setting cmd_crop to default's.
                 vf = build_cover_scale_crop_vf(out_w, out_h)
                 vf = apply_wm_simple(vf)
+                cmd_crop = [
+                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                    "-i", temp_file,
+                    *([] if not vf else ["-vf", vf]),
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-c:a", "aac", "-b:a", "128k",
+                    cropped_file
+                ]
+            else:
+                half_h = out_h // 2
+                # Scale then crop top half
+                vf = f"scale=-2:{out_h},crop={out_w}:{half_h}:0:0"
+                vf = apply_wm_simple(vf)
+                
+                cmd_crop = [
+                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                    "-i", temp_file,
+                    "-vf", vf,
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-c:a", "aac", "-b:a", "128k",
+                    cropped_file
+                ]
+        elif crop_mode == "split_bottom":
+            # Split Bottom Mode: Crop lower half for second speaker
+            # Video is split vertically (atas-bawah), crop to bottom half
+            if OUTPUT_RATIO == "original":
+                print("  [WARN] split_bottom tidak support original ratio, fallback ke default.")
+                crop_mode = "default"
+                # Same logic as split_top for `continue`
+                vf = build_cover_scale_crop_vf(out_w, out_h)
+                vf = apply_wm_simple(vf)
+                cmd_crop = [
+                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                    "-i", temp_file,
+                    *([] if not vf else ["-vf", vf]),
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-c:a", "aac", "-b:a", "128k",
+                    cropped_file
+                ]
+            else:
+                half_h = out_h // 2
+                # Scale then crop bottom half (start from y=half_h)
+                vf = f"scale=-2:{out_h},crop={out_w}:{half_h}:0:{half_h}"
+                vf = apply_wm_simple(vf)
+                
                 cmd_crop = [
                     "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                     "-i", temp_file,
