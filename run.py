@@ -767,7 +767,9 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     # Filter out None results and aggregate speaker positions
                     active_speakers = [face for ts, face in speaker_results if face is not None]
                     
-                    if len(active_speakers) >= 5:  # Need at least 5 detections to be confident
+                    print(f"  Found {len(active_speakers)} active speaker detections out of {len(speaker_results)} frames")
+                    
+                    if len(active_speakers) >= 3:  # Lowered from 5 to 3 for more lenient detection
                         # Average the speaker positions
                         cx = int(sum(f['center'][0] for f in active_speakers) / len(active_speakers))
                         cy = int(sum(f['center'][1] for f in active_speakers) / len(active_speakers))
