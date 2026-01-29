@@ -109,6 +109,102 @@ class FaceDetector:
             self.face_detection.close()
 
 
+class PersonDetector:
+    """Detect people/bodies in video frames using MediaPipe Pose"""
+    
+    def __init__(self, min_detection_confidence=0.5):
+        """
+        Initialize MediaPipe Pose Detection
+        
+        Args:
+            min_detection_confidence: Minimum confidence value [0.0, 1.0] for pose detection
+        """
+        self.mp_pose = mp.solutions.pose
+        self.pose = self.mp_pose.Pose(
+            static_image_mode=True,
+            model_complexity=0,  # 0=Lite, 1=Full, 2=Heavy
+            min_detection_confidence=min_detection_confidence
+        )
+    
+    def detect_person(self, frame: np.ndarray) -> Optional[dict]:
+        """
+        Detect primary person in a single frame
+        
+        Args:
+            frame: BGR image from OpenCV
+            
+        Returns:
+            Person dictionary with keys:
+                - 'bbox': (x, y, width, height) in pixels
+                - 'confidence': detection confidence [0.0, 1.0]
+                - 'center': (cx, cy) center point of torso
+            Or None if no person detected
+        """
+        # Convert BGR to RGB for MediaPipe
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        # Detect pose
+        results = self.pose.process(rgb_frame)
+        
+        if not results.pose_landmarks:
+            return None
+        
+        h, w, _ = frame.shape
+        landmarks = results.pose_landmarks.landmark
+        
+        # Get key body points (shoulders, hips for torso bounding box)
+        # MediaPipe Pose landmark indices:
+        # 11, 12 = shoulders, 23, 24 = hips
+        left_shoulder = landmarks[11]
+        right_shoulder = landmarks[12]
+        left_hip = landmarks[23]
+        right_hip = landmarks[24]
+        
+        # Calculate bounding box from torso landmarks
+        xs = [left_shoulder.x, right_shoulder.x, left_hip.x, right_hip.x]
+        ys = [left_shoulder.y, right_shoulder.y, left_hip.y, right_hip.y]
+        
+        min_x = int(min(xs) * w)
+        max_x = int(max(xs) * w)
+        min_y = int(min(ys) * h)
+        max_y = int(max(ys) * h)
+        
+        # Expand bbox to include head and legs (approximate)
+        height = max_y - min_y
+        width = max_x - min_x
+        
+        # Expand upward for head (40% of torso height)
+        min_y = max(0, min_y - int(height * 0.4))
+        # Expand downward for legs (60% of torso height)
+        max_y = min(h, max_y + int(height * 0.6))
+        # Expand sides (20% each side)
+        min_x = max(0, min_x - int(width * 0.2))
+        max_x = min(w, max_x + int(width * 0.2))
+        
+        bbox_w = max_x - min_x
+        bbox_h = max_y - min_y
+        
+        # Center point
+        center_x = min_x + bbox_w // 2
+        center_y = min_y + bbox_h // 2
+        
+        # Average visibility as confidence
+        visibilities = [left_shoulder.visibility, right_shoulder.visibility, 
+                       left_hip.visibility, right_hip.visibility]
+        confidence = sum(visibilities) / len(visibilities)
+        
+        return {
+            'bbox': (min_x, min_y, bbox_w, bbox_h),
+            'confidence': confidence,
+            'center': (center_x, center_y)
+        }
+    
+    def __del__(self):
+        """Clean up MediaPipe resources"""
+        if hasattr(self, 'pose'):
+            self.pose.close()
+
+
 def analyze_video_faces(video_path: str, sample_rate: int = 30) -> List[Tuple[float, List[dict]]]:
     """
     Analyze faces throughout a video by sampling frames

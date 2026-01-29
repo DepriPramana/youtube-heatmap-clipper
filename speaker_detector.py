@@ -9,11 +9,11 @@ import subprocess
 import json
 import os
 from typing import List, Tuple, Optional, Dict
-from face_detector import FaceDetector
+from face_detector import FaceDetector, PersonDetector
 
 
 class ActiveSpeakerDetector:
-    """Detect active speaker by correlating audio with face positions"""
+    """Detect active speaker by correlating audio with face/person positions"""
     
     def __init__(self, min_audio_threshold=0.01):
         """
@@ -22,7 +22,8 @@ class ActiveSpeakerDetector:
         Args:
             min_audio_threshold: Minimum audio energy to consider as speech
         """
-        self.face_detector = FaceDetector()
+        self.face_detector = FaceDetector(min_detection_confidence=0.5)
+        self.person_detector = PersonDetector(min_detection_confidence=0.5)
         self.min_audio_threshold = min_audio_threshold
     
     def extract_audio_energy(self, video_path: str, segment_duration: float = 0.5) -> List[Tuple[float, float]]:
@@ -165,6 +166,8 @@ class ActiveSpeakerDetector:
         frame_indices = np.linspace(0, total_frames - 1, min(sample_frames, total_frames), dtype=int)
         
         face_positions = []
+        person_positions = []
+        detection_method = None  # Track which method worked
         
         for frame_idx in frame_indices:
             cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
@@ -173,19 +176,36 @@ class ActiveSpeakerDetector:
             if not ret:
                 continue
             
+            # Try face detection first
             faces = self.face_detector.detect_faces(frame)
             if faces:
                 largest_face = self.face_detector.get_largest_face(faces)
                 face_positions.append(largest_face['center'])
+            else:
+                # Fallback to person detection
+                person = self.person_detector.detect_person(frame)
+                if person:
+                    person_positions.append(person['center'])
         
         cap.release()
         
-        if not face_positions:
+        # Determine which detection method to use
+        if len(face_positions) >= len(person_positions):
+            positions = face_positions
+            detection_method = "face"
+        else:
+            positions = person_positions
+            detection_method = "person"
+        
+        if not positions:
+            print(f"  ⚠️  No face or person detected in any frames")
             return None
+        
+        print(f"  Using {detection_method} detection ({len(positions)}/{len(frame_indices)} frames)")
         
         # Check if face detection is stable (low variance)
         # If speaker moves a lot, variance will be high -> fallback to center crop
-        positions_array = np.array(face_positions)
+        positions_array = np.array(positions)
         
         # Calculate variance
         var_x = np.var(positions_array[:, 0])
@@ -212,7 +232,7 @@ class ActiveSpeakerDetector:
                 return None
         
         # Check detection consistency - need at least 60% of frames with face
-        detection_rate = len(face_positions) / len(frame_indices)
+        detection_rate = len(positions) / len(frame_indices)
         if detection_rate < 0.6:
             print(f"  ⚠️  Low detection rate: {detection_rate*100:.0f}%")
             print(f"  Face not consistently detected, using center crop instead")
