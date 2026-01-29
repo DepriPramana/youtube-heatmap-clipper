@@ -393,44 +393,68 @@ def preview_frame():
         start_dl = timestamp
         end_dl = timestamp + 3 # Download 3 seconds
         
-        # Use simpler format and options to avoid ffmpeg errors
-        cmd_dl_snippet = [
-            "yt-dlp", "--force-ipv4", "--quiet", "--no-warnings",
-            "--download-sections", f"*{start_dl}-{end_dl}",
-            # Use broader format selector similar to run.py but capped at 720p
-            "-f", "bv*[height<=720]+ba/b[height<=720]/best[height<=720]/best",
-            # Removed --force-keyframes-at-cuts to reduce re-encoding issues
-            "-o", temp_snippet,
-            url
-        ]
+        preview_generated = False
         
-        print(f"[PREVIEW] Downloading snippet: {start_dl}s - {end_dl}s")
-        # Capture output for debugging
+        # Method 1: Try downloading VIDEO ONLY snippet (no audio merging)
+        # This avoids ffmpeg muxing errors on short segments
         try:
+            cmd_dl_snippet = [
+                "yt-dlp", "--force-ipv4", "--quiet", "--no-warnings",
+                "--download-sections", f"*{start_dl}-{end_dl}",
+                "-f", "bestvideo[height<=720][ext=mp4]/best[height<=720][ext=mp4]/best",
+                "-o", temp_snippet,
+                url
+            ]
+            
+            print(f"[PREVIEW] Downloading snippet (video-only): {start_dl}s - {end_dl}s")
             subprocess.check_output(cmd_dl_snippet, stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            print(f"[ERROR] Snippet download failed: {e.output.decode()}")
-            raise Exception(f"Snippet download failed: {e.output.decode()}")
-        
-        if not os.path.exists(temp_snippet):
-             raise Exception("Failed to download video snippet")
-             
-        # Extract frame from the local snippet
-        # We take the first frame of the snippet
-        cmd_ffmpeg = [
-            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-            "-i", temp_snippet,
-            "-frames:v", "1",
-            "-q:v", "2",
-            preview_path
-        ]
-        subprocess.check_call(cmd_ffmpeg)
-        
+            
+            if os.path.exists(temp_snippet):
+                 # Extract frame from the local snippet
+                 cmd_ffmpeg = [
+                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                    "-i", temp_snippet,
+                    "-frames:v", "1",
+                    "-q:v", "2",
+                    preview_path
+                 ]
+                 subprocess.check_call(cmd_ffmpeg)
+                 preview_generated = True
+        except Exception as e:
+            print(f"[WARN] Snippet download method failed: {e}")
+            
+        # Method 2: Fallback to direct streaming if snippet failed
+        if not preview_generated:
+             print("[PREVIEW] Fallback to direct ffmpeg streaming...")
+             # Get direct URL
+             try:
+                 cmd_url = [
+                    "yt-dlp", "--get-url", "-f", "best[height<=720][protocol^=http][ext=mp4]/best", url
+                 ]
+                 direct_url = subprocess.check_output(cmd_url).decode().strip()
+                 if direct_url:
+                     cmd_ffmpeg_direct = [
+                        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                        "-ss", str(timestamp),
+                        "-i", direct_url,
+                        "-frames:v", "1",
+                        "-q:v", "2",
+                        preview_path
+                     ]
+                     subprocess.check_call(cmd_ffmpeg_direct)
+                     preview_generated = True
+             except Exception as e:
+                 print(f"[ERROR] Direct streaming failed: {e}")
+
         # Cleanup
         try:
-             os.remove(temp_snippet)
+             if os.path.exists(temp_snippet):
+                os.remove(temp_snippet)
         except:
              pass
+        
+        if not preview_generated:
+            raise Exception("Failed to generate preview image via any method")
         
         return jsonify({"ok": True, "url": f"/static/previews/{preview_filename}"})
         
