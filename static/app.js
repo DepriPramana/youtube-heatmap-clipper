@@ -769,10 +769,14 @@ function initCustomCrop() {
     let h = Math.abs(currentY - startY);
 
     // Aspect Ratio Lock Logic
+    // STRICT CHECK: Read DOM directly to avoid variable sync issues
     const isLocked = $("cropRatioLock") && $("cropRatioLock").checked;
+    const isDual = $("cropDualToggle") && $("cropDualToggle").checked;
+
     if (isLocked) {
       // Single: 9:16 (0.5625), Dual: 9:8 (1.125)
-      const targetRatio = isDualCropMode ? (9 / 8) : (9 / 16);
+      // Note: In Dual Mode, BOTH boxes must be 9:8 to stack correctly into a 9:16 output
+      const targetRatio = isDual ? (9 / 8) : (9 / 16);
 
       // Calculate Height based on Width to maintain ratio
       h = w / targetRatio;
@@ -787,7 +791,7 @@ function initCustomCrop() {
 
     // Target correct box
     let activeSel = selection;
-    if (isDualCropMode) {
+    if (isDual) {
       const target = document.querySelector('input[name="dualCropTarget"]:checked').value;
       if (target === "2") activeSel = $("cropSelection2");
     }
