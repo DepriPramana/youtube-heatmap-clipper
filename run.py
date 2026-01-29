@@ -867,7 +867,7 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                 half_h = out_h // 2
                 half_w = out_w
                 
-                print("  Creating dual speaker view (split + zoom + stack)...")
+                print("  Creating dual speaker view (STRICT 50/50 SPLIT for distinct speakers)...")
                 
                 wm = get_watermark_filter(watermark_text, watermark_pos)
                 
