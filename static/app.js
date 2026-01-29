@@ -624,6 +624,7 @@ let currentPreview = null;
 let currentVideoId = "";
 let selectedKeys = new Set();
 // Variables fixed
+let currentCustomCrop = null;
 let currentCustomCrop2 = null; // For Dual Crop Box 2
 let isDualCropMode = false;
 
