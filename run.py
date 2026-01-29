@@ -711,8 +711,11 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     cropped_file
                 ]
         elif crop_mode == "dual_speakers":
-            # Dual Speakers Mode: Stack two speakers vertically
-            # Crop left half (speaker 1) to top, crop right half (speaker 2) to bottom
+            # Dual Speakers Mode: Smart detection with fallback
+            # 1. Try to detect 2 faces
+            # 2. If 2 faces found: crop each face individually
+            # 3. If not: fallback to left/right position-based crop
+            
             if OUTPUT_RATIO == "original":
                 print("  [WARN] dual_speakers tidak support original ratio, fallback ke default.")
                 vf = apply_wm_simple(None)
@@ -725,45 +728,111 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     cropped_file
                 ]
             else:
-                # Each speaker gets half the output height
                 half_h = out_h // 2
                 half_w = out_w
                 
-                # Build filter:
-                # For videos with centered speakers, we need overlapping crops
-                # focused on left and right areas
-                # Left: crop 65% from position 0 (captures left speaker)
-                # Right: crop 65% from position 35% (captures right speaker)
-                
-                wm = get_watermark_filter(watermark_text, watermark_pos)
-                
-                # Use overlapping crops to better capture each speaker
-                # Left speaker: crop leftmost 65% of frame
-                # Right speaker: crop rightmost 65% of frame (starting at 35%)
-                fc = (
-                    f"[0:v]split=2[left_src][right_src];"
-                    # Left speaker (top): crop leftmost 65%, scale to 720x640
-                    f"[left_src]crop=iw*0.65:ih:0:0,scale={half_w}:{half_h},setsar=1[top];"
-                    # Right speaker (bottom): crop rightmost 65%, scale to 720x640
-                    f"[right_src]crop=iw*0.65:ih:iw*0.35:0,scale={half_w}:{half_h},setsar=1[bottom];"
-                    # Stack vertically
-                    f"[top][bottom]vstack[stacked]"
-                )
-                
-                if wm:
-                    fc += f";[stacked]{wm}[out]"
-                else:
-                    fc = fc.replace("[stacked]", "[out]")
-                
-                cmd_crop = [
-                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-                    "-i", temp_file,
-                    "-filter_complex", fc,
-                    "-map", "[out]", "-map", "0:a?",
-                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
-                    "-c:a", "aac", "-b:a", "128k",
-                    cropped_file
-                ]
+                # Try face detection first
+                print("  Detecting multiple speakers...")
+                try:
+                    from face_detector import FaceDetector
+                    import cv2
+                    
+                    # Sample video to detect faces
+                    cap = cv2.VideoCapture(temp_file)
+                    orig_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    orig_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    
+                    detector = FaceDetector(min_detection_confidence=0.3)
+                    faces_found = []
+                    
+                    # Sample 10 frames
+                    sample_count = min(10, total_frames)
+                    for i in range(sample_count):
+                        frame_idx = int((i + 1) * total_frames / (sample_count + 1))
+                        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                        ret, frame = cap.read()
+                        if ret:
+                            results = detector.detect_faces(frame)
+                            if results and len(results) >= 2:
+                                # Sort by x position (left to right)
+                                sorted_faces = sorted(results, key=lambda f: f['center'][0])
+                                faces_found.append((sorted_faces[0]['center'], sorted_faces[1]['center']))
+                    
+                    cap.release()
+                    
+                    # If we found 2 faces in majority of frames, use face-based crop
+                    if len(faces_found) >= sample_count // 2:
+                        # Average the face positions
+                        left_x = int(sum(f[0][0] for f in faces_found) / len(faces_found))
+                        right_x = int(sum(f[1][0] for f in faces_found) / len(faces_found))
+                        
+                        print(f"  2 faces detected at x={left_x}, x={right_x}")
+                        
+                        # Build face-based crop with generous margins
+                        # Each face gets 60% of width centered on face
+                        crop_w = int(orig_w * 0.6)
+                        left_crop_x = max(0, left_x - crop_w // 2)
+                        right_crop_x = max(0, right_x - crop_w // 2)
+                        
+                        wm = get_watermark_filter(watermark_text, watermark_pos)
+                        
+                        fc = (
+                            f"[0:v]split=2[left_src][right_src];"
+                            f"[left_src]crop={crop_w}:{orig_h}:{left_crop_x}:0,scale={half_w}:{half_h},setsar=1[top];"
+                            f"[right_src]crop={crop_w}:{orig_h}:{right_crop_x}:0,scale={half_w}:{half_h},setsar=1[bottom];"
+                            f"[top][bottom]vstack[stacked]"
+                        )
+                        
+                        if wm:
+                            fc += f";[stacked]{wm}[out]"
+                        else:
+                            fc = fc.replace("[stacked]", "[out]")
+                        
+                        cmd_crop = [
+                            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                            "-i", temp_file,
+                            "-filter_complex", fc,
+                            "-map", "[out]", "-map", "0:a?",
+                            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                            "-c:a", "aac", "-b:a", "128k",
+                            cropped_file
+                        ]
+                    else:
+                        raise Exception("Less than 2 faces detected, using position-based crop")
+                        
+                except Exception as e:
+                    # Fallback to position-based crop
+                    print(f"  Face detection failed or insufficient faces: {e}")
+                    print("  Using position-based left/right crop...")
+                    
+                    wm = get_watermark_filter(watermark_text, watermark_pos)
+                    
+                    # Use overlapping crops focused on left and right areas
+                    fc = (
+                        f"[0:v]split=2[left_src][right_src];"
+                        # Left speaker (top): crop leftmost 65%, scale to 720x640
+                        f"[left_src]crop=iw*0.65:ih:0:0,scale={half_w}:{half_h},setsar=1[top];"
+                        # Right speaker (bottom): crop rightmost 65%, scale to 720x640
+                        f"[right_src]crop=iw*0.65:ih:iw*0.35:0,scale={half_w}:{half_h},setsar=1[bottom];"
+                        # Stack vertically
+                        f"[top][bottom]vstack[stacked]"
+                    )
+                    
+                    if wm:
+                        fc += f";[stacked]{wm}[out]"
+                    else:
+                        fc = fc.replace("[stacked]", "[out]")
+                    
+                    cmd_crop = [
+                        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                        "-i", temp_file,
+                        "-filter_complex", fc,
+                        "-map", "[out]", "-map", "0:a?",
+                        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                        "-c:a", "aac", "-b:a", "128k",
+                        cropped_file
+                    ]
         elif crop_mode == "smart_speaker":
             # Smart Speaker Mode: Auto-detect and crop to active speaker's face
             if callable(event_hook):
