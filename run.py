@@ -871,17 +871,16 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                 
                 wm = get_watermark_filter(watermark_text, watermark_pos)
                 
-                # Strategy: Crop 60% width from left and right with 20% offset for zoom effect
-                # Left speaker: crop from 0% to 60% of width (slight right bias for left speaker)
-                # Right speaker: crop from 40% to 100% of width (slight left bias for right speaker)
+                # Strategy: Strict 50/50 split to ensure distinct speakers
+                # Left speaker: crop left 50%
+                # Right speaker: crop right 50%
+                # Scaled to full width (2x zoom horizontally)
                 fc = (
                     f"[0:v]split=2[left_src][right_src];"
-                    # Left speaker (top): crop left 60% centered on left position
-                    # Using 0-60% ensures we capture left speaker even if slightly centered
-                    f"[left_src]crop=iw*0.6:ih:0:0,scale={half_w}:{half_h},setsar=1[top];"
-                    # Right speaker (bottom): crop right 60% centered on right position  
-                    # Using 40%-100% ensures we capture right speaker
-                    f"[right_src]crop=iw*0.6:ih:iw*0.4:0,scale={half_w}:{half_h},setsar=1[bottom];"
+                    # Left speaker (top): crop left 50%
+                    f"[left_src]crop=iw/2:ih:0:0,scale={half_w}:{half_h},setsar=1[top];"
+                    # Right speaker (bottom): crop right 50%
+                    f"[right_src]crop=iw/2:ih:iw/2:0,scale={half_w}:{half_h},setsar=1[bottom];"
                     # Stack vertically
                     f"[top][bottom]vstack[stacked]"
                 )
