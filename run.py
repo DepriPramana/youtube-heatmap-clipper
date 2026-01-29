@@ -810,17 +810,18 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                 except Exception as e:
                     # Fallback to position-based crop
                     print(f"  Face detection failed or insufficient faces: {e}")
-                    print("  Using position-based left/right crop...")
+                    print("  Using position-based left/right crop (strict split)...")
                     
                     wm = get_watermark_filter(watermark_text, watermark_pos)
                     
-                    # Use overlapping crops focused on left and right areas
+                    # Use strict 50/50 split without overlap
+                    # This ensures we get different parts of the frame
                     fc = (
                         f"[0:v]split=2[left_src][right_src];"
-                        # Left speaker (top): crop leftmost 65%, scale to 720x640
-                        f"[left_src]crop=iw*0.65:ih:0:0,scale={half_w}:{half_h},setsar=1[top];"
-                        # Right speaker (bottom): crop rightmost 65%, scale to 720x640
-                        f"[right_src]crop=iw*0.65:ih:iw*0.35:0,scale={half_w}:{half_h},setsar=1[bottom];"
+                        # Left speaker (top): crop strict left 50%
+                        f"[left_src]crop=iw/2:ih:0:0,scale={half_w}:{half_h},setsar=1[top];"
+                        # Right speaker (bottom): crop strict right 50%
+                        f"[right_src]crop=iw/2:ih:iw/2:0,scale={half_w}:{half_h},setsar=1[bottom];"
                         # Stack vertically
                         f"[top][bottom]vstack[stacked]"
                     )
