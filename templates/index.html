@@ -117,14 +117,42 @@
           </div>
 
           <!-- Custom Crop Preview Area -->
+          <!-- Custom Crop Preview Area -->
           <div id="customCropBox" class="form-group hide">
-            <label class="label">Custom Crop Preview</label>
+            <div class="row items-center mb-2">
+              <label class="label mb-0">Custom Crop Preview</label>
+              <!-- Dual Crop Toggle -->
+              <div class="toggle-wrapper" style="margin-left:auto;">
+                <input type="checkbox" id="cropDualToggle" class="checkbox">
+                <label for="cropDualToggle" class="label"
+                  style="display:inline; margin-left:8px; cursor:pointer; font-size:0.9em;">Dual Crop (2
+                  Speakers)</label>
+              </div>
+            </div>
+
+            <!-- Box Selector (Visible only when Dual active) -->
+            <div id="dualCropControls" class="hide row items-center mb-2"
+              style="background:#2d2d2d; padding:8px; border-radius:6px; margin-bottom: 8px;">
+              <span style="font-size: 0.9em; margin-right: 8px;">Target:</span>
+              <label class="radio-label" style="margin-right: 12px; cursor: pointer;">
+                <input type="radio" name="dualCropTarget" value="1" checked> Box 1 (Top/Left)
+              </label>
+              <label class="radio-label" style="cursor: pointer;">
+                <input type="radio" name="dualCropTarget" value="2"> Box 2 (Bottom/Right)
+              </label>
+            </div>
+
             <div class="help" style="margin-bottom: 8px;">Drag to select area / Tarik kotak untuk pilih area</div>
             <div id="cropPreviewContainer"
               style="position: relative; max-width: 100%; border: 1px solid #333; overflow: hidden;">
               <img id="cropImage" src="" style="width: 100%; display: block;" />
+              <!-- Box 1 (Green) -->
               <div id="cropSelection"
                 style="position: absolute; border: 2px solid #00ff00; background: rgba(0, 255, 0, 0.2); display: none;">
+              </div>
+              <!-- Box 2 (Yellow) for Dual Mode -->
+              <div id="cropSelection2"
+                style="position: absolute; border: 2px dashed #ffeb3b; background: rgba(255, 235, 59, 0.2); display: none;">
               </div>
             </div>
             <button id="btnLoadPreview" class="btn btn-secondary" style="margin-top: 8px; width: 100%;">

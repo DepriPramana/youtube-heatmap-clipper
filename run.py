@@ -900,32 +900,72 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     cropped_file
                 ]
         elif crop_mode == "custom_manual":
-            # Custom Manual Crop
+            # Custom Manual Crop handling (Single or Dual)
             # Uses coordinates provided by user (normalized 0.0-1.0)
             if not custom_crop:
                  print("  [WARN] Custom crop selected but no coordinates provided. Fallback to default.")
                  vf = build_cover_scale_crop_vf(out_w, out_h)
                  vf = apply_wm_simple(vf)
+            
+            # Check for Dual Mode
+            elif isinstance(custom_crop, dict) and custom_crop.get("mode") == "dual":
+                 print("  [INFO] Using Custom DUAL Crop Mode")
+                 b1 = custom_crop.get("b1", {})
+                 b2 = custom_crop.get("b2", {})
+                 
+                 # Calc split heights (50/50)
+                 top_h, bottom_h = get_split_heights(out_h)
+                 
+                 # Coordinates
+                 c1x, c1y, c1w, c1h = b1.get('x',0), b1.get('y',0), b1.get('w',1), b1.get('h',1)
+                 c2x, c2y, c2w, c2h = b2.get('x',0), b2.get('y',0), b2.get('w',1), b2.get('h',1)
+                 
+                 wm = get_watermark_filter(watermark_text, watermark_pos)
+                 
+                 # Filter: Split inputs -> Crop 1 -> Scale Top -> Crop 2 -> Scale Bottom -> Vstack
+                 vf = (
+                     f"[0:v]split=2[src1][src2];"
+                     f"[src1]crop=iw*{c1w}:ih*{c1h}:iw*{c1x}:ih*{c1y},scale={out_w}:{top_h},setsar=1[top];"
+                     f"[src2]crop=iw*{c2w}:ih*{c2h}:iw*{c2x}:ih*{c2y},scale={out_w}:{bottom_h},setsar=1[bottom];"
+                     f"[top][bottom]vstack[pre_out]"
+                 )
+                 
+                 if wm:
+                    vf += f";[pre_out]{wm}[out]"
+                 else:
+                    vf = vf.replace("[pre_out]", "[out]")
+
+                 cmd_crop = [
+                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                    "-i", temp_file,
+                    "-filter_complex", vf,
+                    "-map", "[out]", "-map", "0:a?",
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-c:a", "aac", "-b:a", "128k",
+                    cropped_file
+                 ]
+
+            # Single Custom Crop
             else:
                  cx = custom_crop.get('x', 0)
                  cy = custom_crop.get('y', 0)
                  cw = custom_crop.get('w', 1)
                  ch = custom_crop.get('h', 1)
                  
-                 print(f"  Using Custom Crop: x={cx:.2f}, y={cy:.2f}, w={cw:.2f}, h={ch:.2f}")
+                 print(f"  Using Custom Crop (Single): x={cx:.2f}, y={cy:.2f}, w={cw:.2f}, h={ch:.2f}")
                  
                  # Crop using FFmpeg expressions (iw*factor)
                  vf = f"crop=iw*{cw}:ih*{ch}:iw*{cx}:ih*{cy},scale={out_w}:{out_h},setsar=1"
                  vf = apply_wm_simple(vf)
             
-            cmd_crop = [
-                "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-                "-i", temp_file,
-                "-vf", vf,
-                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
-                "-c:a", "aac", "-b:a", "128k",
-                cropped_file
-            ]
+                 cmd_crop = [
+                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                    "-i", temp_file,
+                    "-vf", vf,
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-c:a", "aac", "-b:a", "128k",
+                    cropped_file
+                 ]
         elif crop_mode == "split_left":
             if OUTPUT_RATIO == "original" or not out_w or not out_h or out_h < out_w:
                 vf = build_cover_scale_crop_vf(out_w or 720, out_h or 1280) if OUTPUT_RATIO != "original" else None

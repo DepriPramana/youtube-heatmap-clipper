@@ -590,11 +590,30 @@ function showCropSelection(c) {
 }
 
 // Hook into mouseup to save to segment if active
+// Hook into mouseup to save to segment if active
 function saveSegmentCrop() {
-  if (activeSegmentIndex >= 0 && currentCustomCrop) {
-    lastScanSegments[activeSegmentIndex].custom_crop = currentCustomCrop;
-    console.log(`Saved crop for segment #${activeSegmentIndex + 1}`, currentCustomCrop);
-    renderSegments(lastScanSegments); // Re-render to show checkmark
+  if (activeSegmentIndex >= 0) {
+    let finalCrop = null;
+
+    if (isDualCropMode) {
+      if (currentCustomCrop && currentCustomCrop2) {
+        finalCrop = {
+          mode: "dual",
+          b1: currentCustomCrop,
+          b2: currentCustomCrop2
+        };
+      } else {
+        if (currentCustomCrop) finalCrop = currentCustomCrop;
+      }
+    } else {
+      finalCrop = currentCustomCrop;
+    }
+
+    if (finalCrop) {
+      lastScanSegments[activeSegmentIndex].custom_crop = finalCrop;
+      console.log(`Saved crop for segment #${activeSegmentIndex + 1}`, finalCrop);
+      renderSegments(lastScanSegments);
+    }
   }
 }
 
@@ -604,7 +623,9 @@ let lastPreviewUrl = "";
 let currentPreview = null;
 let currentVideoId = "";
 let selectedKeys = new Set();
-let currentCustomCrop = null;
+// Variables fixed
+let currentCustomCrop2 = null; // For Dual Crop Box 2
+let isDualCropMode = false;
 
 async function scan() {
   setBusy(true);
@@ -721,11 +742,18 @@ function initCustomCrop() {
     startX = e.clientX - rect.left;
     startY = e.clientY - rect.top;
 
-    selection.style.left = startX + "px";
-    selection.style.top = startY + "px";
-    selection.style.width = "0px";
-    selection.style.height = "0px";
-    selection.style.display = "block";
+    // Determine which selection box to move
+    let activeSel = selection;
+    if (isDualCropMode) {
+      const target = document.querySelector('input[name="dualCropTarget"]:checked').value;
+      if (target === "2") activeSel = $("cropSelection2");
+    }
+
+    activeSel.style.left = startX + "px";
+    activeSel.style.top = startY + "px";
+    activeSel.style.width = "0px";
+    activeSel.style.height = "0px";
+    activeSel.style.display = "block";
   });
 
   container.addEventListener("mousemove", (e) => {
@@ -739,10 +767,17 @@ function initCustomCrop() {
     const w = Math.abs(currentX - startX);
     const h = Math.abs(currentY - startY);
 
-    selection.style.left = x + "px";
-    selection.style.top = y + "px";
-    selection.style.width = w + "px";
-    selection.style.height = h + "px";
+    // Target correct box
+    let activeSel = selection;
+    if (isDualCropMode) {
+      const target = document.querySelector('input[name="dualCropTarget"]:checked').value;
+      if (target === "2") activeSel = $("cropSelection2");
+    }
+
+    activeSel.style.left = x + "px";
+    activeSel.style.top = y + "px";
+    activeSel.style.width = w + "px";
+    activeSel.style.height = h + "px";
   });
 
   container.addEventListener("mouseup", (e) => {
@@ -754,15 +789,23 @@ function initCustomCrop() {
     // Note: The displayed image might be scaled, but we want relative coords to original
     // Actually, easiest is to send relative (0.0-1.0) coords to backend
 
-    const style = window.getComputedStyle(selection);
+    // Target correct box
+    let activeSel = selection;
+    if (isDualCropMode) {
+      const target = document.querySelector('input[name="dualCropTarget"]:checked').value;
+      if (target === "2") activeSel = $("cropSelection2");
+    }
+
+    const style = window.getComputedStyle(activeSel);
     const selX = parseFloat(style.left);
     const selY = parseFloat(style.top);
     const selW = parseFloat(style.width);
     const selH = parseFloat(style.height);
 
     if (selW < 10 || selH < 10) {
-      selection.style.display = "none";
-      currentCustomCrop = null;
+      activeSel.style.display = "none";
+      if (!isDualCropMode || activeSel === selection) currentCustomCrop = null;
+      if (isDualCropMode && activeSel === $("cropSelection2")) currentCustomCrop2 = null;
       return;
     }
 
@@ -771,15 +814,27 @@ function initCustomCrop() {
     const imgH = img.clientHeight;
 
     if (imgW > 0 && imgH > 0) {
-      currentCustomCrop = {
+      const cropData = {
         x: selX / imgW,
         y: selY / imgH,
         w: selW / imgW,
         h: selH / imgH
       };
-      console.log("Custom Crop:", currentCustomCrop);
 
-      // Auto-save if in segment mode
+      if (isDualCropMode) {
+        const target = document.querySelector('input[name="dualCropTarget"]:checked').value;
+        if (target === "1") {
+          currentCustomCrop = cropData;
+        } else {
+          currentCustomCrop2 = cropData;
+        }
+      } else {
+        currentCustomCrop = cropData;
+      }
+
+      console.log("Custom Crop Update:", cropData);
+
+      // Auto-save logic updated for dual
       if (activeSegmentIndex >= 0) {
         saveSegmentCrop();
       }
@@ -1057,3 +1112,61 @@ toggleMode();
 toggleFont();
 initAiSettings(); // Initialize AI inputs
 renderSegments([]);
+$("cropDualToggle").addEventListener("change", toggleDualCrop);
+const dualRadios = document.getElementsByName('dualCropTarget');
+dualRadios.forEach(r => r.addEventListener("change", updateDualCropSelection));
+
+function toggleDualCrop() {
+  isDualCropMode = $("cropDualToggle").checked;
+  $("dualCropControls").classList.toggle("hide", !isDualCropMode);
+  $("cropSelection2").style.display = isDualCropMode && currentCustomCrop2 ? 'block' : 'none';
+
+  // Convert current crop to dual format if needed or vice versa
+  if (isDualCropMode) {
+    // Init second box if null
+    if (!currentCustomCrop2) currentCustomCrop2 = { x: 0.5, y: 0.5, w: 0.2, h: 0.2 }; // default dummy
+    updateDualCropSelection();
+  } else {
+    $("cropSelection2").style.display = 'none';
+  }
+}
+
+function updateDualCropSelection() {
+  if (!isDualCropMode) return;
+  const target = document.querySelector('input[name="dualCropTarget"]:checked').value;
+  // We don't visually hide the non-selected box, we just change which one is being drawn
+  // But we might want to highlight the active one?
+  // For now, initCustomCrop handles which one is modified.
+}
+
+// Override showCropSelection to handle dual
+const originalShowCropSelection = showCropSelection;
+showCropSelection = function (c) {
+  if (c && c.mode === 'dual') {
+    $("cropDualToggle").checked = true;
+    toggleDualCrop();
+
+    currentCustomCrop = c.b1;
+    currentCustomCrop2 = c.b2;
+
+    // Render Box 1
+    originalShowCropSelection(c.b1);
+
+    // Render Box 2
+    const img = $("cropImage");
+    const sel2 = $("cropSelection2");
+    if (img.clientWidth && c.b2) {
+      sel2.style.display = 'block';
+      sel2.style.left = (c.b2.x * img.clientWidth) + 'px';
+      sel2.style.top = (c.b2.y * img.clientWidth) + 'px'; // Wait, should be clientHeight
+      sel2.style.top = (c.b2.y * img.clientHeight) + 'px';
+      sel2.style.width = (c.b2.w * img.clientWidth) + 'px';
+      sel2.style.height = (c.b2.h * img.clientHeight) + 'px';
+    }
+  } else {
+    $("cropDualToggle").checked = false;
+    toggleDualCrop();
+    currentCustomCrop = c;
+    originalShowCropSelection(c);
+  }
+}
