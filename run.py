@@ -727,22 +727,24 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
             else:
                 # Each speaker gets half the output height
                 half_h = out_h // 2
+                half_w = out_w
                 
                 # Build filter:
-                # 1. Scale to output height (maintain aspect)
-                # 2. Split stream into 2
-                # 3. Crop left half for speaker 1
-                # 4. Crop right half for speaker 2
-                # 5. Stack vertically
+                # 1. Split input into 2 streams
+                # 2. Crop left half, scale to 720x640 (cover crop)
+                # 3. Crop right half, scale to 720x640 (cover crop)
+                # 4. Stack vertically to get 720x1280
                 
                 wm = get_watermark_filter(watermark_text, watermark_pos)
                 
-                # Scale first, then split and crop
+                # Process each half separately with cover-crop scaling
                 fc = (
-                    f"[0:v]scale=-2:{out_h}[scaled];"
-                    f"[scaled]split=2[s1][s2];"
-                    f"[s1]crop=iw/2:{half_h}:0:(ih-{half_h})/2[top];"
-                    f"[s2]crop=iw/2:{half_h}:iw/2:(ih-{half_h})/2[bottom];"
+                    f"[0:v]split=2[left_src][right_src];"
+                    # Left speaker (top): crop left half, then scale & center crop to 720x640
+                    f"[left_src]crop=iw/2:ih:0:0,scale='if(gte(iw/ih,{half_w}/{half_h}),{half_w},-2)':'if(gte(iw/ih,{half_w}/{half_h}),-2,{half_h})',crop={half_w}:{half_h}:(iw-{half_w})/2:(ih-{half_h})/2[top];"
+                    # Right speaker (bottom): crop right half, then scale & center crop to 720x640
+                    f"[right_src]crop=iw/2:ih:iw/2:0,scale='if(gte(iw/ih,{half_w}/{half_h}),{half_w},-2)':'if(gte(iw/ih,{half_w}/{half_h}),-2,{half_h})',crop={half_w}:{half_h}:(iw-{half_w})/2:(ih-{half_h})/2[bottom];"
+                    # Stack vertically
                     f"[top][bottom]vstack[stacked]"
                 )
                 
