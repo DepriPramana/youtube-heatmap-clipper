@@ -598,6 +598,18 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                     "-c:a", "aac", "-b:a", "128k",
                     cropped_file
                 ]
+            else:
+                # Use center crop for non-original ratios
+                vf = build_cover_scale_crop_vf(out_w, out_h)
+                vf = apply_wm_simple(vf)
+                cmd_crop = [
+                    "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                    "-i", temp_file,
+                    "-vf", vf,
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-c:a", "aac", "-b:a", "128k",
+                    cropped_file
+                ]
         elif crop_mode == "split_right":
             if OUTPUT_RATIO == "original" or not out_w or not out_h or out_h < out_w:
                 vf = build_cover_scale_crop_vf(out_w or 720, out_h or 1280) if OUTPUT_RATIO != "original" else None
