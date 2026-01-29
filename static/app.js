@@ -942,6 +942,54 @@ $("crop").addEventListener("change", toggleCropMode);
 $("btnLoadPreview").addEventListener("click", loadPreviewFrame);
 initCustomCrop();
 
+// Auto-Snap Ratio Logic
+function snapRatio() {
+  const container = $("cropPreviewContainer");
+  if (!container) return;
+
+  // Simulate mouse move to trigger ratio logic
+  // We pass clientX/Y as 0, but the handler uses startX/Y if not dragging? 
+  // Wait, the handler requires 'isDragging' to be true.
+  // Actually, we should just manually trigger a recalc if we can.
+  // But since logic is inside mousemove, we can just simulate a "click-drag-release" or 
+  // better yet: modify the handler to allow "forced" updates.
+
+  // Alternative: Just reset the box? No, user wants to keep position.
+  // Best way: Manually adjust the box dimensions here.
+
+  // Get active box
+  const isDual = $("cropDualToggle") && $("cropDualToggle").checked;
+  let activeSel = $("cropSelection");
+  if (isDual) {
+    const target = document.querySelector('input[name="dualCropTarget"]:checked').value;
+    if (target === "2") activeSel = $("cropSelection2");
+  }
+
+  // Check Lock
+  const isLocked = $("cropRatioLock") && $("cropRatioLock").checked;
+  if (!isLocked) return;
+
+  const w = parseFloat(activeSel.style.width);
+  if (!w) return;
+
+  const targetRatio = isDual ? (9 / 8) : (9 / 16);
+  const newH = w / targetRatio;
+
+  activeSel.style.height = newH + "px";
+
+  // Trigger save (simulate mouseup)
+  const event = new MouseEvent('mouseup', {
+    bubbles: true,
+    cancelable: true,
+    view: window
+  });
+  container.dispatchEvent(event);
+}
+
+// Add listeners
+if ($("cropRatioLock")) $("cropRatioLock").addEventListener("change", snapRatio);
+if ($("cropDualToggle")) $("cropDualToggle").addEventListener("change", snapRatio);
+
 function toggleFont() {
   const isCustom = $("subtitle_font_select").value === "custom";
   $("subtitle_font_custom").classList.toggle("hide", !isCustom);

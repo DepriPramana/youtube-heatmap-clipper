@@ -913,8 +913,11 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
                  b1 = custom_crop.get("b1", {})
                  b2 = custom_crop.get("b2", {})
                  
-                 # Calc split heights (50/50)
-                 top_h, bottom_h = get_split_heights(out_h)
+                 # Calc split heights (50/50) - FORCE EVEN SPLIT
+                 # Override global BOTTOM_HEIGHT logic
+                 half = out_h // 2
+                 top_h = half
+                 bottom_h = out_h - half
                  
                  # Coordinates
                  c1x, c1y, c1w, c1h = b1.get('x',0), b1.get('y',0), b1.get('w',1), b1.get('h',1)
