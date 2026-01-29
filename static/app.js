@@ -990,6 +990,53 @@ function snapRatio() {
 if ($("cropRatioLock")) $("cropRatioLock").addEventListener("change", snapRatio);
 if ($("cropDualToggle")) $("cropDualToggle").addEventListener("change", snapRatio);
 
+// Auto-Create Box on Radio Selection
+const dualRadios = document.getElementsByName("dualCropTarget");
+dualRadios.forEach(radio => {
+  radio.addEventListener("change", (e) => {
+    const val = e.target.value; // "1" or "2"
+    const isDual = $("cropDualToggle").checked;
+    if (!isDual) return;
+
+    // Check if box already exists
+    const hasBox1 = !!currentCustomCrop;
+    const hasBox2 = !!currentCustomCrop2;
+
+    const img = $("cropImage");
+    if (!img.clientWidth) return;
+
+    // Force create if missing
+    if (val === "1" && !hasBox1) {
+      // Default Box 1: Top Center, 9:8 ratio (since output is 9:16 split)
+      currentCustomCrop = { x: 0.25, y: 0.1, w: 0.5, h: 0.4 };
+    }
+    else if (val === "2" && !hasBox2) {
+      // Default Box 2: Bottom Center
+      currentCustomCrop2 = { x: 0.25, y: 0.5, w: 0.5, h: 0.4 };
+    }
+
+    // We need to visually update the box immediately. 
+    const selection = $("cropSelection");
+    const selection2 = $("cropSelection2");
+    const activeSel = (val === "1") ? selection : selection2;
+    const cropData = (val === "1") ? currentCustomCrop : currentCustomCrop2;
+
+    if (cropData) {
+      activeSel.style.display = "block";
+      activeSel.style.left = (cropData.x * img.clientWidth) + "px";
+      activeSel.style.top = (cropData.y * img.clientHeight) + "px";
+      activeSel.style.width = (cropData.w * img.clientWidth) + "px";
+      activeSel.style.height = (cropData.h * img.clientHeight) + "px";
+
+      // Now snap really fixes the ratio
+      if (typeof snapRatio === "function") snapRatio();
+
+      // Auto-save so it persists
+      if (activeSegmentIndex >= 0) saveSegmentCrop();
+    }
+  });
+});
+
 function toggleFont() {
   const isCustom = $("subtitle_font_select").value === "custom";
   $("subtitle_font_custom").classList.toggle("hide", !isCustom);

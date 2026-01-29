@@ -468,6 +468,9 @@ def proses_satu_clip(video_id, item, index, total_duration, crop_mode="default",
     start = max(0, start_original - PADDING)
     end = min(end_original + PADDING, total_duration)
 
+    # Trim 3 seconds from the start as requested
+    start += 3
+    
     if end - start < 3:
         return False
 
